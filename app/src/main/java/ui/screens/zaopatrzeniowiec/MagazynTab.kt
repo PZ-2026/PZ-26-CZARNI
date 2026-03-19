@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -127,16 +128,13 @@ fun MagazynTab() {
 }
 @Composable
 fun ProduktCard(item: MagazynItem) {
-    // Sprawdzamy, czy stan jest niski (np. mniej niż 10 sztuk)
     val isLowStock = item.ilosc < 10
 
     ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Color.White // Wymuszenie białego koloru karty
         )
     ) {
         Row(

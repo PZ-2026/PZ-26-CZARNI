@@ -42,15 +42,12 @@ fun DostawcyTab() {
         it.nazwa.contains(searchQuery, ignoreCase = true)
     }
 
-    val gradientBg = Brush.verticalGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-            MaterialTheme.colorScheme.background
-        )
-    )
-
-    Box(modifier = Modifier.fillMaxSize().background(gradientBg)) {
-        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background) // Czysty SoftPinkBG
+    ) {
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)){
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(

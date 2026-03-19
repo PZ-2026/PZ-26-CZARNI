@@ -2,10 +2,9 @@ package com.example.magazyn.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Dokładne kolory z Twoich screenów
+val SoftPinkBG = Color(0xFFFAF0F0)    // Tło z image_c67c43 (bardzo jasny róż)
+val DeepBurgundy = Color(0xFF8D4B4B)  // Bordowy z przycisków i ikon
+val MutedRose = Color(0xFFF4DADA)     // Kolor tła nagłówka i kart (image_c6849f)
+val DarkText = Color(0xFF311111)      // Ciemny brąz dla tekstów
+val CardWhite = Color(0xFFFFFFFF)     // Biały dla wnętrza kart produktów

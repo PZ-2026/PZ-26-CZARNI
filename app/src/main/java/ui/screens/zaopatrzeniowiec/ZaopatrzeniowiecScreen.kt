@@ -30,42 +30,26 @@ fun ZaopatrzeniowiecDashboard() {
 
     Scaffold(
         topBar = {
-            // Używamy Surface zamiast zwykłego TopAppBar dla lepszej kontroli nad cieniem i kształtem
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f), // Subtelna przezroczystość
-                tonalElevation = 6.dp, // Dodaje delikatny cień pod spodem
-                shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp) // Zaokrąglone dolne rogi
+                // Teraz automatycznie pobierze nasz MutedRose
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                tonalElevation = 6.dp,
+                shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
             ) {
                 Row(
                     modifier = Modifier
-                        .statusBarsPadding() // Zapewnia, że tekst nie wejdzie pod ikonki systemowe (zegar, bateria)
+                        .statusBarsPadding()
                         .padding(horizontal = 24.dp, vertical = 20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Ikona obok tytułu dodaje profesjonalizmu
                     Icon(
-                        imageVector = Icons.Default.Dashboard, // Musisz dodać ten import
+                        imageVector = Icons.Default.Dashboard,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.primary, // Bordowy
                         modifier = Modifier.size(28.dp)
                     )
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Text(
-                            text = "Panel Zaopatrzeniowca",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold, // Pogrubienie dla nowoczesnego wyglądu
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Text(
-                            text = "Witaj ponownie!",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                        )
-                    }
+                    // ... reszta kolumny z tekstem ...
                 }
             }
         },
