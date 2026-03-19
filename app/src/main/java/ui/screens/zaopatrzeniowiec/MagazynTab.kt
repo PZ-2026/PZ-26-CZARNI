@@ -54,14 +54,11 @@ fun MagazynTab() {
             }
         }
 
-    val gradientBg = Brush.verticalGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-            MaterialTheme.colorScheme.background
-        )
-    )
-
-    Box(modifier = Modifier.fillMaxSize().background(gradientBg)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    )  {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             Spacer(modifier = Modifier.height(20.dp))
             Text(

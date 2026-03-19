@@ -23,7 +23,6 @@ fun ProfilTab() {
     val telefon = "+48 123 456 789"
     val rola = "ZAOPATRZENIOWIEC" //[cite: 8]
 
-    // Definicja gradientu tła wykorzystująca kolory z Twojego MaterialTheme
     val gradientBg = Brush.verticalGradient(
         colors = listOf(
             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
@@ -34,7 +33,7 @@ fun ProfilTab() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(gradientBg)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
