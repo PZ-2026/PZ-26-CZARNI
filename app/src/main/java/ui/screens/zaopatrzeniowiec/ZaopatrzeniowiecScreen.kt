@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ZaopatrzeniowiecDashboard() {
+fun ZaopatrzeniowiecDashboard(onLogut: () -> Unit) {
     // Stan aktywnego przycisku (później zastąpisz to NavHostem)
     val selectedItem = remember { mutableStateOf(0) }
     val items = listOf(
@@ -63,7 +63,7 @@ fun ZaopatrzeniowiecDashboard() {
                         onClick = {
                             selectedItem.value = index
                             if (item is BottomNavItem.Wyloguj) {
-                                // TODO: Logika wylogowania (czyszczenie tokena JWT) [cite: 56]
+                                onLogut()
                             }
                         }
                     )
