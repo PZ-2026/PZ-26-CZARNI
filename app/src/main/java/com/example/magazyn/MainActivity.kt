@@ -20,8 +20,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import com.example.magazyn.ui.theme.MagazynTheme
-import com.example.magazyn.ui.screens.LoginScreen
+import ui.screens.login.LoginScreen
 import ui.screens.zaopatrzeniowiec.ZaopatrzeniowiecDashboard
+import ui.screens.login.RegisterScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,29 +31,41 @@ class MainActivity : ComponentActivity() {
         setContent {
             MagazynTheme {
                 var currentUserRole by remember { mutableStateOf(UserRole.NONE) }
+                // Dodajemy stan pomocniczy dla ekranu rejestracji
+                var isRegistering by remember { mutableStateOf(false) }
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    when (currentUserRole) {
-                        UserRole.NONE -> {
-                            LoginScreen(onLoginSuccess = { role ->
-                                currentUserRole = role
-                            })
-                        }
-                        UserRole.ZAOPATRZENIOWIEC -> {
-                            // funkcja wylogownaia
-                            ZaopatrzeniowiecDashboard(onLogut = { currentUserRole = UserRole.NONE })
-                        }
-                        UserRole.ADMIN -> {
-                            PlaceholderScreen("Panel Admina") { currentUserRole = UserRole.NONE }
-                        }
-                        UserRole.MAGAZYNIER -> {
-                            PlaceholderScreen("Panel Magazyniera") { currentUserRole = UserRole.NONE }
-                        }
-                        UserRole.KLIENT -> {
-                            PlaceholderScreen("Panel Klienta") { currentUserRole = UserRole.NONE }
+                    // Logika wyboru ekranu
+                    if (isRegistering) {
+                        RegisterScreen(
+                            onRegisterSuccess = { isRegistering = false },
+                            onBackToLogin = { isRegistering = false }
+                        )
+                    } else {
+                        when (currentUserRole) {
+                            UserRole.NONE -> {
+                                LoginScreen(
+                                    onLoginSuccess = { role ->
+                                        currentUserRole = role
+                                    },
+                                    onNavigateToRegister = {
+                                        // TO ROZWIĄZUJE TWÓJ BŁĄD
+                                        isRegistering = true
+                                    }
+                                )
+                            }
+                            UserRole.ZAOPATRZENIOWIEC -> {
+                                ZaopatrzeniowiecDashboard(onLogut = { currentUserRole = UserRole.NONE })
+                            }
+                            //UserRole.KLIENT -> {
+                                // Tutaj wstaw swój MainDashboard() dla klienta
+                                //MainDashboard()
+                            //}
+                            // Pozostałe role...
+                            else -> PlaceholderScreen("Panel") { currentUserRole = UserRole.NONE }
                         }
                     }
                 }
@@ -72,5 +85,30 @@ fun PlaceholderScreen(title: String, onLogout: () -> Unit) {
         Button(onClick = onLogout) {
             Text("Wyloguj")
         }
+    }
+}
+
+@Composable
+fun AppNavigation() {
+    // Prosty stan przechowujący nazwę aktualnego ekranu
+    var currentScreen by remember { mutableStateOf("login") }
+
+    when (currentScreen) {
+        "login" -> LoginScreen(
+            onLoginSuccess = { role ->
+                // Logika po zalogowaniu, np. przejście do Dashboardu
+            },
+            onNavigateToRegister = {
+                currentScreen = "register" // Przełączamy na rejestrację
+            }
+        )
+        "register" -> RegisterScreen(
+            onRegisterSuccess = {
+                currentScreen = "login" // Po rejestracji wracamy do logowania
+            },
+            onBackToLogin = {
+                currentScreen = "login" // Przycisk powrotu
+            }
+        )
     }
 }
