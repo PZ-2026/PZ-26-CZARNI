@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import com.example.magazyn.ui.theme.MagazynTheme
+import ui.screens.klient.KlientDashboard
 import ui.screens.login.LoginScreen
 import ui.screens.zaopatrzeniowiec.ZaopatrzeniowiecDashboard
 import ui.screens.login.RegisterScreen
@@ -60,10 +61,10 @@ class MainActivity : ComponentActivity() {
                             UserRole.ZAOPATRZENIOWIEC -> {
                                 ZaopatrzeniowiecDashboard(onLogut = { currentUserRole = UserRole.NONE })
                             }
-                            //UserRole.KLIENT -> {
+                            UserRole.KLIENT -> {
                                 // Tutaj wstaw swój MainDashboard() dla klienta
-                                //MainDashboard()
-                            //}
+                                KlientDashboard()
+                            }
                             // Pozostałe role...
                             else -> PlaceholderScreen("Panel") { currentUserRole = UserRole.NONE }
                         }
