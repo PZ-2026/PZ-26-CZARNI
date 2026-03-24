@@ -45,7 +45,7 @@ fun ProfilTab() {
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(25.dp))
 
             // Sekcja Headera (Avatar i Nazwisko)
             Surface(
@@ -84,7 +84,7 @@ fun ProfilTab() {
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(25.dp))
 
             // Kontener na dane w formie karty
             ElevatedCard(
@@ -106,9 +106,9 @@ fun ProfilTab() {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
                     ImprovedInfoRow(icon = Icons.Default.Phone, label = "Telefon", value = telefon)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                    ImprovedInfoRow(icon = Icons.Default.MonetizationOn, label = "Firma", value = telefon)
+                    ImprovedInfoRow(icon = Icons.Default.MonetizationOn, label = "Firma", value = firma)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                    ImprovedInfoRow(icon = Icons.Default.MonetizationOn, label = "Firma", value = telefon)
+                    ImprovedInfoRow(icon = Icons.Default.CreditCard, label = "NIP", value = nip)
                 }
             }
 
