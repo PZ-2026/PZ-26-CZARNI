@@ -67,7 +67,7 @@ fun KlientDashboard() {
         Box(modifier = Modifier.padding(padding)) {
             when (selectedItem.intValue) {
                 0 -> ProfilTab() // Tutaj wywołujemy Twój wygląd z obrazka
-                1 -> Text("Widok Zamówień")
+                1 -> ZamowTab()
                 2 -> Text("Widok Historii")
                 3 -> Text("Logika Wylogowania")
             }
