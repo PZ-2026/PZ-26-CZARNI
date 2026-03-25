@@ -63,7 +63,9 @@ class MainActivity : ComponentActivity() {
                             }
                             UserRole.KLIENT -> {
                                 // Tutaj wstaw swój MainDashboard() dla klienta
-                                KlientDashboard()
+                                KlientDashboard(onLogout = {
+                                    currentUserRole = UserRole.NONE
+                                })
                             }
                             // Pozostałe role...
                             else -> PlaceholderScreen("Panel") { currentUserRole = UserRole.NONE }

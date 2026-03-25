@@ -10,9 +10,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import ui.screens.login.LoginScreen
 
 @Composable
-fun KlientDashboard() {
+fun KlientDashboard(onLogout: () -> Unit) {
     val selectedItem = remember { mutableIntStateOf(0) }
     val items = listOf(
         BottomNavItem.Profil,
@@ -52,13 +53,15 @@ fun KlientDashboard() {
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedItem.intValue == index,
-                        onClick = { selectedItem.intValue = index },
+                        onClick = {
+                            if (item == BottomNavItem.Wyloguj) {
+                                onLogout() // Wywołujemy wylogowanie zamiast zmiany zakładki
+                            } else {
+                                selectedItem.intValue = index
+                            }
+                        },
                         icon = { Icon(item.icon, contentDescription = item.title) },
-                        label = { Text(item.title, style = MaterialTheme.typography.labelSmall) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFF5D4037),
-                            indicatorColor = Color(0xFFF2EAE8)
-                        )
+                        label = { Text(item.title) }
                     )
                 }
             }
@@ -68,8 +71,7 @@ fun KlientDashboard() {
             when (selectedItem.intValue) {
                 0 -> ProfilTab() // Tutaj wywołujemy Twój wygląd z obrazka
                 1 -> ZamowTab()
-                2 -> Text("Widok Historii")
-                3 -> Text("Logika Wylogowania")
+                2 -> HistoriaTab()
             }
         }
     }
