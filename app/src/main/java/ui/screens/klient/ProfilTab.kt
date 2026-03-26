@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun ProfilTab() {
@@ -25,29 +27,30 @@ fun ProfilTab() {
     val telefon = "+48 675 352 987"
     val firma = "mojank"
     val nip = "123-456-78-90"
-    val rola = "KLIENT" //[cite: 8]
+    val rola = "KLIENT"
 
-    val gradientBg = Brush.verticalGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-            MaterialTheme.colorScheme.background
-        )
-    )
+    // Stan przewijania
+    val scrollState = rememberScrollState()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.TopCenter // Centrowanie na tabletach
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                // DODAJEMY PRZEWIJANIE:
+                .verticalScroll(scrollState)
+                // OGRANICZAMY SZEROKOŚĆ DLA TABLETÓW:
+                .widthIn(max = 450.dp)
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(25.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
-            // Sekcja Headera (Avatar i Nazwisko)
+            // Sekcja Headera
             Surface(
                 modifier = Modifier.size(120.dp),
                 shape = CircleShape,
@@ -72,7 +75,6 @@ fun ProfilTab() {
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            // Badge z rolą użytkownika [cite: 6, 8]
             SuggestionChip(
                 onClick = { },
                 label = { Text(rola) },
@@ -80,13 +82,12 @@ fun ProfilTab() {
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     labelColor = MaterialTheme.colorScheme.onSecondaryContainer
                 ),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.padding(top = 4.dp)
+                shape = RoundedCornerShape(16.dp)
             )
 
-            Spacer(modifier = Modifier.height(25.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // Kontener na dane w formie karty
+            // Karta z danymi
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -106,19 +107,19 @@ fun ProfilTab() {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
                     ImprovedInfoRow(icon = Icons.Default.Phone, label = "Telefon", value = telefon)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                    ImprovedInfoRow(icon = Icons.Default.MonetizationOn, label = "Firma", value = firma)
+                    ImprovedInfoRow(icon = Icons.Default.Business, label = "Firma", value = firma)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
                     ImprovedInfoRow(icon = Icons.Default.CreditCard, label = "NIP", value = nip)
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            // Zamiast weight(1f) dajemy elastyczny odstęp:
+            Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = { /* TODO: Edycja danych */ },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp)
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
@@ -126,6 +127,9 @@ fun ProfilTab() {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Edytuj dane profilowe")
             }
+
+            // Dodatkowy margines na dole, żeby przycisk nie dotykał krawędzi po przewinięciu
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
