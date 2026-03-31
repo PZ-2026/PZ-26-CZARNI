@@ -24,6 +24,7 @@ import ui.screens.klient.KlientDashboard
 import ui.screens.login.LoginScreen
 import ui.screens.zaopatrzeniowiec.ZaopatrzeniowiecDashboard
 import ui.screens.login.RegisterScreen
+import ui.screens.magazynier.MagazynierDashboard
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,6 +61,9 @@ class MainActivity : ComponentActivity() {
                             }
                             UserRole.ZAOPATRZENIOWIEC -> {
                                 ZaopatrzeniowiecDashboard(onLogut = { currentUserRole = UserRole.NONE })
+                            }
+                            UserRole.MAGAZYNIER -> {
+                                MagazynierDashboard(onLogout = { currentUserRole = UserRole.NONE })
                             }
                             UserRole.KLIENT -> {
                                 // Tutaj wstaw swój MainDashboard() dla klienta
