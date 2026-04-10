@@ -14,12 +14,17 @@ import androidx.compose.ui.unit.sp
 import com.example.magazyn.UserRole
 import com.example.magazyn.ui.theme.DeepBurgundy
 import androidx.compose.ui.platform.LocalUriHandler
+import com.example.magazyn.api.ApiConnector
+import com.example.magazyn.DatabaseConnector
+
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(onLoginSuccess: (UserRole) -> Unit) {
     var login by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
     val uriHandler = LocalUriHandler.current
 
@@ -80,13 +85,24 @@ fun LoginScreen(onLoginSuccess: (UserRole) -> Unit) {
 
         Button(
             onClick = {
-                // loginy na sztywno
-                when {
-                    login == "admin" && password == "123" -> onLoginSuccess(UserRole.ADMIN)
-                    login == "zao" && password == "123" -> onLoginSuccess(UserRole.ZAOPATRZENIOWIEC)
-                    login == "mag" && password == "123" -> onLoginSuccess(UserRole.MAGAZYNIER)
-                    login == "klient" && password == "123" -> onLoginSuccess(UserRole.KLIENT)
-                    else -> errorText = "Błędne dane logowania!"
+                scope.launch {
+                    // Wywołujemy nasze API zamiast bezpośredniego połączenia z DB
+                    val rola = ApiConnector.login(login, password)
+
+                    if (rola != null) {
+                        // Jeśli API zwróciło rolę, mapujemy ją na enum
+                        val userRole = when(rola) {
+                            0 -> UserRole.KLIENT
+                            1 -> UserRole.MAGAZYNIER
+                            2 -> UserRole.ZAOPATRZENIOWIEC
+                            3 -> UserRole.ADMIN
+                            else -> UserRole.KLIENT
+                        }
+                        onLoginSuccess(userRole)
+                    } else {
+
+                        errorText = "Błędne dane logowania!"
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),
