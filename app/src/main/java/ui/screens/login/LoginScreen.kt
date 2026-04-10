@@ -1,7 +1,6 @@
 package ui.screens.login
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,12 +14,15 @@ import androidx.compose.ui.unit.sp
 import com.example.magazyn.UserRole
 import com.example.magazyn.ui.theme.DeepBurgundy
 import androidx.compose.ui.platform.LocalUriHandler
+import com.example.magazyn.api.ApiConnector
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(onLoginSuccess: (UserRole) -> Unit, onNavigateToRegister: () -> Unit) {
     var login by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
     val uriHandler = LocalUriHandler.current
 
@@ -31,10 +33,9 @@ fun LoginScreen(onLoginSuccess: (UserRole) -> Unit, onNavigateToRegister: () -> 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        // KONTENER OGRANICZAJĄCY SZEROKOŚĆ (MaxWidth 400dp)
         Column(
             modifier = Modifier
-                .widthIn(max = 400.dp) // Kluczowa linia dla tabletów
+                .widthIn(max = 400.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -76,20 +77,22 @@ fun LoginScreen(onLoginSuccess: (UserRole) -> Unit, onNavigateToRegister: () -> 
 
             Button(
                 onClick = {
-                    // loginy na sztywno
 
-                    when {
+                    scope.launch {
+                        val rola = ApiConnector.login(login, password)
 
-                        login == "admin" && password == "123" -> onLoginSuccess(UserRole.ADMIN)
-
-                        login == "zao" && password == "123" -> onLoginSuccess(UserRole.ZAOPATRZENIOWIEC)
-
-                        login == "mag" && password == "123" -> onLoginSuccess(UserRole.MAGAZYNIER)
-
-                        login == "klient" && password == "123" -> onLoginSuccess(UserRole.KLIENT)
-
-                        else -> errorText = "Błędne dane logowania!"
-
+                        if (rola != null) {
+                            val userRole = when (rola) {
+                                0 -> UserRole.KLIENT
+                                1 -> UserRole.MAGAZYNIER
+                                2 -> UserRole.ZAOPATRZENIOWIEC
+                                3 -> UserRole.ADMIN
+                                else -> UserRole.KLIENT
+                            }
+                            onLoginSuccess(userRole)
+                        } else {
+                            errorText = "Błędne dane logowania!"
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -101,8 +104,6 @@ fun LoginScreen(onLoginSuccess: (UserRole) -> Unit, onNavigateToRegister: () -> 
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Przyciski pod spodem - teraz w Column, żeby na tabletach były jeden pod drugim
-            // lub w Row, jeśli wolisz obok siebie:
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -110,7 +111,7 @@ fun LoginScreen(onLoginSuccess: (UserRole) -> Unit, onNavigateToRegister: () -> 
                 TextButton(onClick = { uriHandler.openUri("https://github.com/PZ-2026/PZ-26-CZARNI") }) {
                     Text("Polityka prywatności", color = Color.Gray, fontSize = 14.sp)
                 }
-                TextButton(onClick = { onNavigateToRegister() }) { // TUTAJ ZMIANA
+                TextButton(onClick = { onNavigateToRegister() }) {
                     Text("Zarejestruj się", color = Color.Gray, fontSize = 14.sp)
                 }
             }
