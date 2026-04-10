@@ -7,7 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object ApiConnector {
-    // WPISZ TUTAJ SWOJE IP (zostaw http i port 3000)
     private const val API_URL = "http://188.68.236.147:3000/login"
 
     suspend fun login(email: String, haslo: String): Int? = withContext(Dispatchers.IO) {
