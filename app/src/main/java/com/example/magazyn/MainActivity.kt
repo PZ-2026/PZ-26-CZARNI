@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import com.example.magazyn.ui.theme.MagazynTheme
+import ui.screens.admin.AdminDashboard
 import ui.screens.klient.KlientDashboard
 import ui.screens.login.LoginScreen
 import ui.screens.zaopatrzeniowiec.ZaopatrzeniowiecDashboard
@@ -32,14 +33,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             MagazynTheme {
                 var currentUserRole by remember { mutableStateOf(UserRole.NONE) }
-                // Dodajemy stan pomocniczy dla ekranu rejestracji
                 var isRegistering by remember { mutableStateOf(false) }
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Logika wyboru ekranu
                     if (isRegistering) {
                         RegisterScreen(
                             onRegisterSuccess = { isRegistering = false },
@@ -53,21 +52,24 @@ class MainActivity : ComponentActivity() {
                                         currentUserRole = role
                                     },
                                     onNavigateToRegister = {
-                                        // TO ROZWIĄZUJE TWÓJ BŁĄD
                                         isRegistering = true
                                     }
                                 )
+                            }
+                            UserRole.ADMIN -> {
+                                AdminDashboard(onLogout = { currentUserRole = UserRole.NONE })
                             }
                             UserRole.ZAOPATRZENIOWIEC -> {
                                 ZaopatrzeniowiecDashboard(onLogut = { currentUserRole = UserRole.NONE })
                             }
                             UserRole.KLIENT -> {
-                                // Tutaj wstaw swój MainDashboard() dla klienta
                                 KlientDashboard(onLogout = {
                                     currentUserRole = UserRole.NONE
                                 })
                             }
-                            // Pozostałe role...
+                            UserRole.MAGAZYNIER -> {
+                                PlaceholderScreen("Panel Magazyniera") { currentUserRole = UserRole.NONE }
+                            }
                             else -> PlaceholderScreen("Panel") { currentUserRole = UserRole.NONE }
                         }
                     }
@@ -88,30 +90,5 @@ fun PlaceholderScreen(title: String, onLogout: () -> Unit) {
         Button(onClick = onLogout) {
             Text("Wyloguj")
         }
-    }
-}
-
-@Composable
-fun AppNavigation() {
-    // Prosty stan przechowujący nazwę aktualnego ekranu
-    var currentScreen by remember { mutableStateOf("login") }
-
-    when (currentScreen) {
-        "login" -> LoginScreen(
-            onLoginSuccess = { role ->
-                // Logika po zalogowaniu, np. przejście do Dashboardu
-            },
-            onNavigateToRegister = {
-                currentScreen = "register" // Przełączamy na rejestrację
-            }
-        )
-        "register" -> RegisterScreen(
-            onRegisterSuccess = {
-                currentScreen = "login" // Po rejestracji wracamy do logowania
-            },
-            onBackToLogin = {
-                currentScreen = "login" // Przycisk powrotu
-            }
-        )
     }
 }
