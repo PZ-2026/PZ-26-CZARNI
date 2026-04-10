@@ -15,7 +15,6 @@ import com.example.magazyn.UserRole
 import com.example.magazyn.ui.theme.DeepBurgundy
 import androidx.compose.ui.platform.LocalUriHandler
 import com.example.magazyn.api.ApiConnector
-import com.example.magazyn.DatabaseConnector
 
 import kotlinx.coroutines.launch
 
