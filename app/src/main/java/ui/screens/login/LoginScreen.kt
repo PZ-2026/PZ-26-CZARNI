@@ -33,6 +33,7 @@ fun LoginScreen(onLoginSuccess: (UserRole) -> Unit, onNavigateToRegister: () -> 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
+        // Kontener ograniczający szerokość dla tabletów
         Column(
             modifier = Modifier
                 .widthIn(max = 400.dp)
@@ -77,8 +78,8 @@ fun LoginScreen(onLoginSuccess: (UserRole) -> Unit, onNavigateToRegister: () -> 
 
             Button(
                 onClick = {
-
                     scope.launch {
+                        // Logowanie przez API
                         val rola = ApiConnector.login(login, password)
 
                         if (rola != null) {
