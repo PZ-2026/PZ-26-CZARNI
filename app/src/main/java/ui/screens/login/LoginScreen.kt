@@ -88,7 +88,7 @@ fun LoginScreen(onLoginSuccess: (UserRole) -> Unit, onNavigateToRegister: () -> 
                                 1 -> UserRole.MAGAZYNIER
                                 2 -> UserRole.ZAOPATRZENIOWIEC
                                 3 -> UserRole.ADMIN
-                                else -> UserRole.KLIENT
+                                else -> UserRole.NONE
                             }
                             onLoginSuccess(userRole)
                         } else {
