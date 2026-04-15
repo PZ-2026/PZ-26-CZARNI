@@ -1,6 +1,6 @@
-package repository;
+package magazyn.repository;
 
-import entity.Uzytkownik;
+import magazyn.entity.Uzytkownik;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.Optional;

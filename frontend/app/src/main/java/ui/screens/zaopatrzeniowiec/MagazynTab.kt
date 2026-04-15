@@ -15,6 +15,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.magazyn.api.MagazynItemDTO
 
 data class MagazynItem(
     val id: Int,
@@ -27,40 +29,34 @@ data class MagazynItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MagazynTab() {
+fun MagazynTab(viewModel: MagazynViewModel = viewModel()) {
+    // 1. STANY UI
     var searchQuery by remember { mutableStateOf("") }
-    // Stan sortowania: true = rosnąco, false = malejąco, null = brak sortowania
     var sortAscending by remember { mutableStateOf<Boolean?>(null) }
 
-    // Przykładowe dane spożywcze zgodne z Twoją bazą
-    val produktySpozywcze = remember {
-        mutableStateListOf(
-            MagazynItem(1, "Mleko 3.2% 1L", "5901234123", 3.50, 45.0, "szt."),
-            MagazynItem(2, "Chleb Żytni", "5906543654", 4.20, 5.0, "szt."), // Niski stan!
-            MagazynItem(3, "Masło Ekstra 200g", "5909988998", 7.99, 120.0, "szt."),
-            MagazynItem(4, "Jaja Wolny Wybieg (10szt)", "5907766554", 12.00, 3.0, "opak."), // Niski stan!
-            MagazynItem(5, "Mąka Pszenna 1kg", "5904433221", 2.80, 50.0, "kg.")
-        )
-    }
+    // 2. POBIERANIE DANYCH Z VIEWMODELU
+    val produktyZBazy by viewModel.produkty.collectAsState()
 
-    // Filtrowanie i sortowanie
-    val filteredList = produktySpozywcze
-        .filter { it.nazwa.contains(searchQuery, ignoreCase = true) }
+    // 3. LOGIKA FILTROWANIA I SORTOWANIA (na danych z bazy)
+    val filteredList = produktyZBazy
+        .filter { it.nazwaProduktu.contains(searchQuery, ignoreCase = true) }
         .let { list ->
             when (sortAscending) {
-                true -> list.sortedBy { it.ilosc }
-                false -> list.sortedByDescending { it.ilosc }
+                true -> list.sortedBy { it.stanMagazynu?.ilosc ?: 0.0 }
+                false -> list.sortedByDescending { it.stanMagazynu?.ilosc ?: 0.0 }
                 else -> list
             }
         }
 
+    // 4. STRUKTURA WIDOKU
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-    )  {
+    ) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             Spacer(modifier = Modifier.height(20.dp))
+
             Text(
                 text = "Stan Magazynowy",
                 style = MaterialTheme.typography.headlineSmall,
@@ -85,7 +81,7 @@ fun MagazynTab() {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // --- PANEL FILTRÓW (Sortowanie) ---
+            // Panel sortowania
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -111,17 +107,32 @@ fun MagazynTab() {
                 }
             }
 
-            // Lista
+            // Lista produktów (wyświetla przefiltrowaną listę z bazy)
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
-                items(filteredList) { item ->
-                    ProduktCard(item)
+                items(filteredList) { produkt ->
+                    ProduktCardFromDB(produkt)
                 }
             }
         }
     }
+}
+
+// Pomocnicza funkcja dla karty (żeby kod był czystszy)
+@Composable
+fun ProduktCardFromDB(produkt: MagazynItemDTO) {
+    ProduktCard(
+        item = MagazynItem(
+            id = produkt.id,
+            nazwa = produkt.nazwaProduktu,
+            kodKreskowy = produkt.kodKreskowy,
+            cena = produkt.cena,
+            ilosc = produkt.stanMagazynu?.ilosc ?: 0.0,
+            jednostka = produkt.stanMagazynu?.jednostka ?: "szt."
+        )
+    )
 }
 @Composable
 fun ProduktCard(item: MagazynItem) {

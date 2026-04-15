@@ -1,5 +1,6 @@
-package entity;
+package magazyn.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,10 +16,6 @@ public class StanMagazynu {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_produktu", nullable = false)
-    private Produkt produkt;
-
     @Column(length = 20, nullable = false)
     private String jednostka;
 
@@ -27,4 +24,9 @@ public class StanMagazynu {
 
     @Column(columnDefinition = "text")
     private String strefa = "strefa_A";
+
+    @OneToOne
+    @JoinColumn(name = "id_produktu")
+    @JsonIgnoreProperties("stanMagazynu")
+    private Produkt produkt;
 }

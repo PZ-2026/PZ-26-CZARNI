@@ -1,4 +1,4 @@
-package entity;
+package magazyn.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
@@ -11,11 +11,11 @@ import java.io.Serializable;
 @Setter
 @EqualsAndHashCode
 @Embeddable
-public class ZamowienieProduktyDostawcyId implements Serializable {
-
-    @Column(name = "id_produktu")
-    private Integer idProduktu;
+public class ZamowienieProduktyKlienciId implements Serializable {
 
     @Column(name = "id_zamowienia")
     private Integer idZamowienia;
+
+    @Column(name = "id_produktu")
+    private Integer idProduktu;
 }
