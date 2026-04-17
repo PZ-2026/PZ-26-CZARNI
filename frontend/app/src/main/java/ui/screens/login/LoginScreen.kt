@@ -15,10 +15,11 @@ import com.example.magazyn.UserRole
 import com.example.magazyn.ui.theme.DeepBurgundy
 import androidx.compose.ui.platform.LocalUriHandler
 import com.example.magazyn.api.ApiConnector
+import com.example.magazyn.api.dtos.UzytkownikDTO
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(onLoginSuccess: (UserRole) -> Unit, onNavigateToRegister: () -> Unit) {
+fun LoginScreen(onLoginSuccess: (UzytkownikDTO) -> Unit, onNavigateToRegister: () -> Unit) {
     var login by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf("") }
@@ -79,19 +80,12 @@ fun LoginScreen(onLoginSuccess: (UserRole) -> Unit, onNavigateToRegister: () -> 
             Button(
                 onClick = {
                     scope.launch {
-                        // Logowanie przez API
-                        val rola = ApiConnector.login(login, password)
+                        val uzytkownik = ApiConnector.login(login, password)
 
-                        if (rola != null) {
-                            val userRole = when (rola) {
-                                0 -> UserRole.KLIENT
-                                1 -> UserRole.MAGAZYNIER
-                                2 -> UserRole.ZAOPATRZENIOWIEC
-                                3 -> UserRole.ADMIN
-                                else -> UserRole.NONE
-                            }
-                            onLoginSuccess(userRole)
-                        } else {
+                        if (uzytkownik != null) {
+                            onLoginSuccess(uzytkownik)
+                        }
+                        else {
                             errorText = "Błędne dane logowania!"
                         }
                     }
