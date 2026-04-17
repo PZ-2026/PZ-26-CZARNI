@@ -14,21 +14,18 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.example.magazyn.api.dtos.UzytkownikDTO
 
 @Composable
-fun ProfilTab() {
-    val imie = "Jan"
-    val nazwisko = "Kowalski"
-    val email = "jan.zaopatrzenie@magazyn.pl"
-    val telefon = "+48 123 456 789"
-    val rola = "ZAOPATRZENIOWIEC" //[cite: 8]
+fun ProfilTab(uzytkownik: UzytkownikDTO?) { // Teraz przyjmujemy dane z zewnątrz
 
-    val gradientBg = Brush.verticalGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-            MaterialTheme.colorScheme.background
-        )
-    )
+    // Mapowanie numeru roli na tekst
+    val rolaOpis = when(uzytkownik?.rola) {
+        1 -> "ADMINISTRATOR"
+        2 -> "ZAOPATRZENIOWIEC"
+        3 -> "MAGAZYNIER"
+        else -> "UŻYTKOWNIK"
+    }
 
     Box(
         modifier = Modifier
@@ -43,7 +40,7 @@ fun ProfilTab() {
         ) {
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Sekcja Headera (Avatar i Nazwisko)
+            // Sekcja Headera
             Surface(
                 modifier = Modifier.size(120.dp),
                 shape = CircleShape,
@@ -62,33 +59,29 @@ fun ProfilTab() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Dane zaciągnięte z obiektu uzytkownik
             Text(
-                text = "$imie $nazwisko",
+                text = "${uzytkownik?.imie ?: "Ładowanie..."} ${uzytkownik?.nazwisko ?: ""}",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            // Badge z rolą użytkownika [cite: 6, 8]
             SuggestionChip(
                 onClick = { },
-                label = { Text(rola) },
+                label = { Text(rolaOpis) },
                 colors = SuggestionChipDefaults.suggestionChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     labelColor = MaterialTheme.colorScheme.onSecondaryContainer
                 ),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.padding(top = 4.dp)
+                shape = RoundedCornerShape(16.dp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Kontener na dane w formie karty
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(
@@ -98,26 +91,29 @@ fun ProfilTab() {
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
-                    ImprovedInfoRow(icon = Icons.Default.Email, label = "Email", value = email)
+                    ImprovedInfoRow(
+                        icon = Icons.Default.Email,
+                        label = "Email",
+                        value = uzytkownik?.email ?: "-"
+                    )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                    ImprovedInfoRow(icon = Icons.Default.Phone, label = "Telefon", value = telefon)
+                    ImprovedInfoRow(
+                        icon = Icons.Default.Phone,
+                        label = "Telefon",
+                        value = uzytkownik?.telefon ?: "-"
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(40.dp))
 
-            Button(
-                onClick = { /* TODO: Edycja danych */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp)
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Icon(Icons.Default.Edit, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Edytuj dane profilowe")
-            }
+            Text(
+                text = "Dane mogą być zmienione tylko przez administratora systemu.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 32.dp)
+            )
         }
     }
 }

@@ -14,11 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.magazyn.api.dtos.UzytkownikDTO
+import ui.screens.klient.ProfilTab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ZaopatrzeniowiecDashboard(onLogut: () -> Unit) {
-    // Stan aktywnego przycisku (później zastąpisz to NavHostem)
     val selectedItem = remember { mutableStateOf(0) }
     val items = listOf(
         BottomNavItem.Profil,
@@ -32,7 +33,6 @@ fun ZaopatrzeniowiecDashboard(onLogut: () -> Unit) {
         topBar = {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                // Teraz automatycznie pobierze nasz MutedRose
                 color = MaterialTheme.colorScheme.secondaryContainer,
                 tonalElevation = 6.dp,
                 shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
@@ -49,7 +49,6 @@ fun ZaopatrzeniowiecDashboard(onLogut: () -> Unit) {
                         tint = MaterialTheme.colorScheme.primary, // Bordowy
                         modifier = Modifier.size(28.dp)
                     )
-                    // ... reszta kolumny z tekstem ...
                 }
             }
         },
@@ -72,11 +71,23 @@ fun ZaopatrzeniowiecDashboard(onLogut: () -> Unit) {
         }
     ) { it -> // padding z Scaffold
         Box(modifier = Modifier.padding(it)) {
+            // Wewnątrz ZaopatrzeniowiecDashboard, w sekcji 'when'
             when (selectedItem.value) {
-                0 -> ProfilTab()
+                0 -> {
+                    // Tworzymy "sztuczne" DTO tylko po to, żeby typy się zgadzały
+                    val fakeUser = UzytkownikDTO(
+                        id = 4,
+                        imie = "Ładowanie",
+                        nazwisko = "...",
+                        email = "",
+                        telefon = "",
+                        rola = 2
+                    )
+                    ProfilTab(fakeUser)
+                }
                 1 -> MagazynTab()
                 2 -> DostawcyTab()
-                3 -> HistoriaTab()
+                3 -> HistoriaTab(4) // Tu historia już przyjmuje Int, więc jest OK
             }
         }
     }
