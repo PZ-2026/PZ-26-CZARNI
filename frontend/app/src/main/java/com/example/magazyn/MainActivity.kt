@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
                         }
                         else {
                             when (currentUser?.rola) {
-                                0 -> KlientDashboard(handleLogout)
+                                0 -> KlientDashboard(currentUser!!,handleLogout)
                                 //1 -> MagazynierDashboard({ onLogout = handleLogout }) <-- jak kacperek zrobi to sie odkomentuje
                                 2 -> ZaopatrzeniowiecDashboard(currentUser,handleLogout)
                                 3 -> AdminDashboard(handleLogout)

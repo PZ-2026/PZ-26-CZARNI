@@ -18,16 +18,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.example.magazyn.api.dtos.UzytkownikDTO
+import com.example.magazyn.utils.getRolaName
 
 @Composable
-fun ProfilTab() {
-    val imie = "Jan"
-    val nazwisko = "Zapotoczny"
-    val email = "jan.zapotoczny@magazyn.pl"
-    val telefon = "+48 675 352 987"
-    val firma = "mojank"
-    val nip = "123-456-78-90"
-    val rola = "KLIENT"
+fun ProfilTab(user: UzytkownikDTO?) {
+
 
     // Stan przewijania
     val scrollState = rememberScrollState()
@@ -70,14 +66,14 @@ fun ProfilTab() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "$imie $nazwisko",
+                text = "${user?.imie } ${user?.nazwisko}",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             SuggestionChip(
                 onClick = { },
-                label = { Text(rola) },
+                label = { Text(getRolaName(user?.rola)) },
                 colors = SuggestionChipDefaults.suggestionChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     labelColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -103,13 +99,18 @@ fun ProfilTab() {
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
-                    ImprovedInfoRow(icon = Icons.Default.Email, label = "Email", value = email)
+                    ImprovedInfoRow(icon = Icons.Default.Email, label = "Email", value = "${user?.email}")
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                    ImprovedInfoRow(icon = Icons.Default.Phone, label = "Telefon", value = telefon)
+                    ImprovedInfoRow(icon = Icons.Default.Phone, label = "Telefon", value = "${user?.telefon}")
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                    ImprovedInfoRow(icon = Icons.Default.Business, label = "Firma", value = firma)
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                    ImprovedInfoRow(icon = Icons.Default.CreditCard, label = "NIP", value = nip)
+                    if (!user?.firma.isNullOrBlank()) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+                        ImprovedInfoRow(icon = Icons.Default.Business, label = "Firma", value = user!!.firma!!)
+                    }
+                    if (!user?.nip.isNullOrBlank()) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+                        ImprovedInfoRow(icon = Icons.Default.CreditCard, label = "NIP", value = user!!.nip!!)
+                    }
                 }
             }
 

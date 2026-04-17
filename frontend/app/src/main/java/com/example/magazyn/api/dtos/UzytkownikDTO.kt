@@ -6,5 +6,7 @@ data class UzytkownikDTO(
     val nazwisko: String,
     val email: String,
     val telefon: String,
+    val firma: String?,
+    val nip: String?,
     val rola: Int
 )

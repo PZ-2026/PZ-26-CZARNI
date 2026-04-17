@@ -15,17 +15,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.magazyn.api.dtos.UzytkownikDTO
+import com.example.magazyn.utils.getRolaName
 
 @Composable
-fun ProfilTab(uzytkownik: UzytkownikDTO?) { // Teraz przyjmujemy dane z zewnątrz
-
-    // Mapowanie numeru roli na tekst
-    val rolaOpis = when(uzytkownik?.rola) {
-        1 -> "ADMINISTRATOR"
-        2 -> "ZAOPATRZENIOWIEC"
-        3 -> "MAGAZYNIER"
-        else -> "UŻYTKOWNIK"
-    }
+fun ProfilTab(user: UzytkownikDTO?) { // Teraz przyjmujemy dane z zewnątrz
 
     Box(
         modifier = Modifier
@@ -59,16 +52,16 @@ fun ProfilTab(uzytkownik: UzytkownikDTO?) { // Teraz przyjmujemy dane z zewnątr
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Dane zaciągnięte z obiektu uzytkownik
+            // Dane zaciągnięte z obiektu user
             Text(
-                text = "${uzytkownik?.imie ?: "Ładowanie..."} ${uzytkownik?.nazwisko ?: ""}",
+                text = "${user?.imie} ${user?.nazwisko}",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             SuggestionChip(
                 onClick = { },
-                label = { Text(rolaOpis) },
+                label = { Text(getRolaName(user?.rola)) },
                 colors = SuggestionChipDefaults.suggestionChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     labelColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -94,13 +87,13 @@ fun ProfilTab(uzytkownik: UzytkownikDTO?) { // Teraz przyjmujemy dane z zewnątr
                     ImprovedInfoRow(
                         icon = Icons.Default.Email,
                         label = "Email",
-                        value = uzytkownik?.email ?: "-"
+                        value = user?.email ?: "-"
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
                     ImprovedInfoRow(
                         icon = Icons.Default.Phone,
                         label = "Telefon",
-                        value = uzytkownik?.telefon ?: "-"
+                        value = user?.telefon ?: "-"
                     )
                 }
             }
