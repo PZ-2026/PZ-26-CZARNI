@@ -3,7 +3,8 @@ package com.example.magazyn.api
 import com.example.magazyn.api.interfaces.*
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 object RetrofitInstance {
     private const val BASE_URL = "http://localhost:8080/" // lokalny adres ip komputera, powinno działać
                                                              // dla emulatora adres to: http://10.0.2.2:8080/
@@ -18,8 +19,15 @@ object RetrofitInstance {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
+            .client(client)
             .build()
     }
+    val logging = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
+    val client = OkHttpClient.Builder()
+        .addInterceptor(logging)
+        .build()
 
     val uzytkownikApi: UzytkownikApi by lazy {
         retrofit.create(UzytkownikApi::class.java)
@@ -32,7 +40,7 @@ object RetrofitInstance {
         retrofit.create(ZamowieniaApi::class.java)
     }
     val dostawcyApi: DostawcyApi by lazy {
-        retrofit.create(dostawcyApi::class.java)
+        retrofit.create(DostawcyApi::class.java)
     }
     val produktApi: ProduktApi by lazy {
         retrofit.create(ProduktApi::class.java)

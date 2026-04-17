@@ -35,6 +35,7 @@ class MainActivity : ComponentActivity() {
             MagazynTheme {
                 var currentUser by remember { mutableStateOf<UzytkownikDTO?>(null) }
                 var isRegistering by remember { mutableStateOf(false) }
+                val handleLogout = { currentUser = null }
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -54,10 +55,11 @@ class MainActivity : ComponentActivity() {
                         }
                         else {
                             when (currentUser?.rola) {
-                                0 -> KlientDashboard({ currentUser == null })
-                                //1 -> MagazynierDashboard({ onLogout = { currentUser == null } }) <-- jak kacperek zrobi to sie odkomentuje
-                                2 -> ZaopatrzeniowiecDashboard(currentUser,{ currentUser == null })
-                                3 -> AdminDashboard({ currentUser == null } )
+                                0 -> KlientDashboard(handleLogout)
+                                //1 -> MagazynierDashboard({ onLogout = handleLogout }) <-- jak kacperek zrobi to sie odkomentuje
+                                2 -> ZaopatrzeniowiecDashboard(currentUser,handleLogout)
+                                3 -> AdminDashboard(handleLogout)
+                                else -> PlaceholderScreen("Nieznana rola", handleLogout)
                             }
                         }
 

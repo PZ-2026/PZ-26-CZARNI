@@ -56,10 +56,13 @@ fun ZaopatrzeniowiecDashboard(user: UzytkownikDTO?, onLogut: () -> Unit) {
                         label = { Text(item.title, style = MaterialTheme.typography.labelSmall) },
                         selected = selectedItem.value == index,
                         onClick = {
-                            selectedItem.value = index
                             if (item is BottomNavItem.Wyloguj) {
                                 onLogut()
                             }
+                            else{
+                                selectedItem.value = index
+                            }
+
                         }
                     )
                 }
@@ -74,7 +77,7 @@ fun ZaopatrzeniowiecDashboard(user: UzytkownikDTO?, onLogut: () -> Unit) {
                 }
                 1 -> MagazynTab()
                 2 -> DostawcyTab()
-                3 -> HistoriaTab(4) // Tu historia już przyjmuje Int, więc jest OK
+                3 -> HistoriaTab(user!!.id) // Tu historia już przyjmuje Int, więc jest OK
             }
         }
     }
