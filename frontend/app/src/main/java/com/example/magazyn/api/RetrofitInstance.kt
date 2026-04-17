@@ -1,5 +1,9 @@
 package com.example.magazyn.api
 
+import com.example.magazyn.api.interfaces.DostawcyApi
+import com.example.magazyn.api.interfaces.MagazynApi
+import com.example.magazyn.api.interfaces.ProduktApi
+import com.example.magazyn.api.interfaces.ZamowieniaApi
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -18,5 +22,26 @@ object RetrofitInstance {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(MagazynApi::class.java)
+    }
+    val zamowieniaApi: ZamowieniaApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ZamowieniaApi::class.java)
+    }
+    val dostawcyApi: DostawcyApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(DostawcyApi::class.java)
+    }
+    val produktApi: ProduktApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ProduktApi::class.java)
     }
 }

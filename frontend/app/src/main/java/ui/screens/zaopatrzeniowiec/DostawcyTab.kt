@@ -11,11 +11,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.magazyn.api.dtos.DostawcaDTO
+import com.example.magazyn.api.models.DostawcyViewModel
 
+// Twój model do wyświetlania pozostaje bez zmian
 data class DostawcaItem(
     val id: Int,
     val nazwa: String,
@@ -25,70 +29,89 @@ data class DostawcaItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DostawcyTab() {
-    var searchQuery by remember { mutableStateOf("") }
+fun DostawcyTab(
+    viewModel: DostawcyViewModel = viewModel(),
+    uzytkownikId: Int = 4 // <-- Przekazujemy ID zalogowanego zaopatrzeniowca
+) {
+    // 1. Zmienna trzymająca wybranego dostawcę (null = brak, pokazujemy listę)
+    var wybranyDostawca by remember { mutableStateOf<DostawcaItem?>(null) }
 
-    // Przykładowe dane zgodne ze strukturą Twojej bazy
-    val listaDostawcow = remember {
-        listOf(
-            DostawcaItem(1, "Hurtownia Nabiału ", "ul. Wiejska 5, 00-001 Warszawa", "+48 500 100 200"),
-            DostawcaItem(2, "Piekarnia Chrupiąca", "ul. Piekarzy 12, 31-000 Kraków", "+48 12 444 55 66"),
-            DostawcaItem(3, "Zakłady Mięsne 'Polski Smak'", "al. Jerozolimskie 100, Warszawa", "+48 600 700 800"),
-            DostawcaItem(4, "Dystrybucja Jaj 'Kurka'", "ul. Polna 2, 80-001 Gdańsk", "+48 58 333 22 11")
+    // Jeśli jakiś dostawca jest wybrany, pokaż ekran zamawiania
+    if (wybranyDostawca != null) {
+        NoweZamowienieScreen(
+            idDostawcy = wybranyDostawca!!.id,
+            nazwaDostawcy = wybranyDostawca!!.nazwa,
+            idUzytkownika = uzytkownikId,
+            onNavigateBack = { wybranyDostawca = null } // <-- Wyzerowanie stanu wraca do listy
         )
     }
+    // Jeśli nie, pokaż normalną listę dostawców
+    else {
+        var searchQuery by remember { mutableStateOf("") }
 
-    val filteredDostawcy = listaDostawcow.filter {
-        it.nazwa.contains(searchQuery, ignoreCase = true)
-    }
+        LaunchedEffect(Unit) {
+            viewModel.fetchDostawcy()
+        }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background) // Czysty SoftPinkBG
-    ) {
-        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)){
-            Spacer(modifier = Modifier.height(20.dp))
+        val dostawcy by viewModel.dostawcyList
+        val loading by viewModel.isLoading
+        val error by viewModel.errorMessage
 
-            Text(
-                text = "Baza Dostawców",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
+        val processedDostawcy = remember(dostawcy, searchQuery) {
+            val mappedList = dostawcy.map { dto ->
+                DostawcaItem(dto.id, dto.nazwa, dto.adres, dto.telefon)
+            }
+            if (searchQuery.isNotBlank()) {
+                mappedList.filter { it.nazwa.contains(searchQuery, ignoreCase = true) }
+            } else {
+                mappedList
+            }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)){
+                // ... (Twój kod nagłówka i wyszukiwarki) ...
 
-            // Wyszukiwarka po nazwie dostawcy
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Szukaj dostawcy po nazwie...") },
-                leadingIcon = { Icon(Icons.Default.Search, null) },
-                shape = RoundedCornerShape(16.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Lista dostawców
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 100.dp)
-            ) {
-                items(filteredDostawcy) { dostawca ->
-                    DostawcaCard(dostawca)
+                if (loading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (error != null) {
+                    Text(text = error!!, color = Color.Red, modifier = Modifier.padding(16.dp))
+                } else if (processedDostawcy.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Brak dostawców do wyświetlenia.", color = MaterialTheme.colorScheme.outline)
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 100.dp)
+                    ) {
+                        items(processedDostawcy, key = { it.id }) { dostawca ->
+                            // PRZEKAZUJEMY FUNKCJĘ KLIKNIĘCIA
+                            DostawcaCard(
+                                dostawca = dostawca,
+                                onZamowClick = {
+                                    wybranyDostawca = dostawca
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+// Komponenty DostawcaCard i DostawcaInfoRow pozostają DOKŁADNIE takie, jakie były w Twoim kodzie.
+// Wklej je poniżej funkcji DostawcyTab.
+
 @Composable
-fun DostawcaCard(dostawca: DostawcaItem) {
+fun DostawcaCard(dostawca: DostawcaItem, onZamowClick: () -> Unit) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -96,7 +119,6 @@ fun DostawcaCard(dostawca: DostawcaItem) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Ikona ciężarówki (LocalShipping) dla dostawcy
                 Surface(
                     modifier = Modifier.size(44.dp),
                     shape = RoundedCornerShape(12.dp),
@@ -123,20 +145,18 @@ fun DostawcaCard(dostawca: DostawcaItem) {
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp)
 
-            // Dane kontaktowe i adresowe z Twojej bazy
             DostawcaInfoRow(icon = Icons.Default.LocationOn, text = dostawca.adres)
             Spacer(modifier = Modifier.height(8.dp))
             DostawcaInfoRow(icon = Icons.Default.Phone, text = dostawca.telefon)
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Przycisk szybkiego kontaktu (opcjonalny)
             OutlinedButton(
-                onClick = { /* TODO: Wywołanie numeru telefonu */ },
+                onClick = onZamowClick,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Zamów towar")
             }

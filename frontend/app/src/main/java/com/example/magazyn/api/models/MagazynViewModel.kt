@@ -1,9 +1,9 @@
-package ui.screens.zaopatrzeniowiec
+package com.example.magazyn.api.models
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.magazyn.api.MagazynItemDTO
 import com.example.magazyn.api.RetrofitInstance
+import com.example.magazyn.api.dtos.MagazynItemDTO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -24,7 +24,6 @@ class MagazynViewModel : ViewModel() {
                 val odpowiedz = RetrofitInstance.api.getProdukty()
                 _produkty.value = odpowiedz
             } catch (e: Exception) {
-                // Tutaj możesz obsłużyć błąd (np. brak internetu)
                 e.printStackTrace()
             }
         }

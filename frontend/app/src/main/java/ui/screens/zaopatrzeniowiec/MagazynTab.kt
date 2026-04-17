@@ -16,7 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.magazyn.api.MagazynItemDTO
+import com.example.magazyn.api.dtos.MagazynItemDTO
+import com.example.magazyn.api.models.MagazynViewModel
 
 data class MagazynItem(
     val id: Int,
@@ -30,14 +31,15 @@ data class MagazynItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MagazynTab(viewModel: MagazynViewModel = viewModel()) {
-    // 1. STANY UI
+    LaunchedEffect(Unit) {
+        viewModel.pobierzProdukty()
+    }
+
     var searchQuery by remember { mutableStateOf("") }
     var sortAscending by remember { mutableStateOf<Boolean?>(null) }
 
-    // 2. POBIERANIE DANYCH Z VIEWMODELU
     val produktyZBazy by viewModel.produkty.collectAsState()
 
-    // 3. LOGIKA FILTROWANIA I SORTOWANIA (na danych z bazy)
     val filteredList = produktyZBazy
         .filter { it.nazwaProduktu.contains(searchQuery, ignoreCase = true) }
         .let { list ->
@@ -48,7 +50,6 @@ fun MagazynTab(viewModel: MagazynViewModel = viewModel()) {
             }
         }
 
-    // 4. STRUKTURA WIDOKU
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -120,7 +121,7 @@ fun MagazynTab(viewModel: MagazynViewModel = viewModel()) {
     }
 }
 
-// Pomocnicza funkcja dla karty (żeby kod był czystszy)
+// Pomocnicza funkcja dla karty
 @Composable
 fun ProduktCardFromDB(produkt: MagazynItemDTO) {
     ProduktCard(
@@ -142,7 +143,7 @@ fun ProduktCard(item: MagazynItem) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = Color.White // Wymuszenie białego koloru karty
+            containerColor = Color.White
         )
     ) {
         Row(
@@ -171,7 +172,7 @@ fun ProduktCard(item: MagazynItem) {
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Dane produktu z Twojej bazy (produkty)
+            // Dane produktu z bazy (produkty)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.nazwa,
@@ -190,7 +191,7 @@ fun ProduktCard(item: MagazynItem) {
                 )
             }
 
-            // Stan magazynowy z Twojej bazy (stan_magazynu)
+            // Stan magazynowy z bazy (stan_magazynu)
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "${item.ilosc}",

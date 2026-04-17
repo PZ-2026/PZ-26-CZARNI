@@ -7,6 +7,5 @@ import java.util.Optional;
 
 @Repository
 public interface UzytkownikRepository extends JpaRepository<Uzytkownik, Integer> {
-    // Spring sam wygeneruje zapytanie na podstawie nazwy metody!
     Optional<Uzytkownik> findByEmail(String email);
 }

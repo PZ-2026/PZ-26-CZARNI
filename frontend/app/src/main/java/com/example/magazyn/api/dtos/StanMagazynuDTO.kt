@@ -1,4 +1,4 @@
-package com.example.magazyn.api
+package com.example.magazyn.api.dtos
 
 import com.google.gson.annotations.SerializedName
 
