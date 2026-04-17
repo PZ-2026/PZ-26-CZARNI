@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
+import com.example.magazyn.api.dtos.UzytkownikDTO
 import com.example.magazyn.ui.theme.MagazynTheme
 import ui.screens.admin.AdminDashboard
 import ui.screens.klient.KlientDashboard
@@ -32,8 +33,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MagazynTheme {
-                var currentUserRole by remember { mutableStateOf(UserRole.NONE) }
+                var currentUser by remember { mutableStateOf<UzytkownikDTO?>(null) }
                 var isRegistering by remember { mutableStateOf(false) }
+                val handleLogout = { currentUser = null }
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -45,33 +47,22 @@ class MainActivity : ComponentActivity() {
                             onBackToLogin = { isRegistering = false }
                         )
                     } else {
-                        when (currentUserRole) {
-                            UserRole.NONE -> {
-                                LoginScreen(
-                                    onLoginSuccess = { role ->
-                                        currentUserRole = role
-                                    },
-                                    onNavigateToRegister = {
-                                        isRegistering = true
-                                    }
-                                )
-                            }
-                            UserRole.ADMIN -> {
-                                AdminDashboard(onLogout = { currentUserRole = UserRole.NONE })
-                            }
-                            UserRole.ZAOPATRZENIOWIEC -> {
-                                ZaopatrzeniowiecDashboard(onLogut = { currentUserRole = UserRole.NONE })
-                            }
-                            UserRole.KLIENT -> {
-                                KlientDashboard(onLogout = {
-                                    currentUserRole = UserRole.NONE
-                                })
-                            }
-                            UserRole.MAGAZYNIER -> {
-                                PlaceholderScreen("Panel Magazyniera") { currentUserRole = UserRole.NONE }
-                            }
-                            else -> PlaceholderScreen("Panel") { currentUserRole = UserRole.NONE }
+                        if (currentUser == null) {
+                            LoginScreen(
+                                onLoginSuccess = { user -> currentUser = user },
+                                onNavigateToRegister = { isRegistering = true }
+                            )
                         }
+                        else {
+                            when (currentUser?.rola) {
+                                0 -> KlientDashboard(currentUser!!,handleLogout)
+                                //1 -> MagazynierDashboard({ onLogout = handleLogout }) <-- jak kacperek zrobi to sie odkomentuje
+                                2 -> ZaopatrzeniowiecDashboard(currentUser,handleLogout)
+                                3 -> AdminDashboard(handleLogout)
+                                else -> PlaceholderScreen("Nieznana rola", handleLogout)
+                            }
+                        }
+
                     }
                 }
             }

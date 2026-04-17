@@ -10,9 +10,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.magazyn.api.dtos.UzytkownikDTO
 
 @Composable
-fun KlientDashboard(onLogout: () -> Unit) {
+fun KlientDashboard(user: UzytkownikDTO, onLogout: () -> Unit) {
     val selectedItem = remember { mutableIntStateOf(0) }
     val items = listOf(
         BottomNavItem.Profil,
@@ -68,7 +69,7 @@ fun KlientDashboard(onLogout: () -> Unit) {
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
             when (selectedItem.intValue) {
-                0 -> ProfilTab() // Tutaj wywołujemy Twój wygląd z obrazka
+                0 -> ProfilTab(user) // Tutaj wywołujemy Twój wygląd z obrazka
                 1 -> ZamowTab()
                 2 -> HistoriaTab()
             }
