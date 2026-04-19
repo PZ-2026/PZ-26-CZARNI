@@ -25,6 +25,7 @@ import ui.screens.klient.KlientDashboard
 import ui.screens.login.LoginScreen
 import ui.screens.zaopatrzeniowiec.ZaopatrzeniowiecDashboard
 import ui.screens.login.RegisterScreen
+import ui.screens.magazynier.MagazynierDashboard
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,7 +69,7 @@ class MainActivity : ComponentActivity() {
                                 })
                             }
                             UserRole.MAGAZYNIER -> {
-                                PlaceholderScreen("Panel Magazyniera") { currentUserRole = UserRole.NONE }
+                                MagazynierDashboard(onLogout = { currentUserRole = UserRole.NONE })
                             }
                             else -> PlaceholderScreen("Panel") { currentUserRole = UserRole.NONE }
                         }
