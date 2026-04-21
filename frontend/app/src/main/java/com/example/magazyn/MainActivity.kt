@@ -26,6 +26,7 @@ import ui.screens.klient.KlientDashboard
 import ui.screens.login.LoginScreen
 import ui.screens.zaopatrzeniowiec.ZaopatrzeniowiecDashboard
 import ui.screens.login.RegisterScreen
+import ui.screens.magazynier.MagazynierDashboard
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,7 +57,7 @@ class MainActivity : ComponentActivity() {
                         else {
                             when (currentUser?.rola) {
                                 0 -> KlientDashboard(currentUser!!,handleLogout)
-                                //1 -> MagazynierDashboard({ onLogout = handleLogout }) <-- jak kacperek zrobi to sie odkomentuje
+                                1 -> MagazynierDashboard(currentUser, handleLogout) 
                                 2 -> ZaopatrzeniowiecDashboard(currentUser,handleLogout)
                                 3 -> AdminDashboard(handleLogout)
                                 else -> PlaceholderScreen("Nieznana rola", handleLogout)
