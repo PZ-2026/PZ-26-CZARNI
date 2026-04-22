@@ -63,7 +63,6 @@ class MainActivity : ComponentActivity() {
                                 else -> PlaceholderScreen("Nieznana rola", handleLogout)
                             }
                         }
-
                     }
                 }
             }

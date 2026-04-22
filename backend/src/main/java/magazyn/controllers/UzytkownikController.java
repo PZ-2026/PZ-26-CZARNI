@@ -50,4 +50,23 @@ public class UzytkownikController {
             return ResponseEntity.status(500).body("Błąd podczas rejestracji: " + e.getMessage());
         }
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Uzytkownik> updateUzytkownik(@PathVariable Integer id, @RequestBody Uzytkownik dane) {
+        return uzytkownikRepository.findById(id)
+                .map(uzytkownik -> {
+                    // Przepisujemy dane z DTO/Body do obiektu encji
+                    uzytkownik.setImie(dane.getImie());
+                    uzytkownik.setNazwisko(dane.getNazwisko());
+                    uzytkownik.setEmail(dane.getEmail());
+                    uzytkownik.setTelefon(dane.getTelefon());
+                    uzytkownik.setFirma(dane.getFirma());
+                    uzytkownik.setNip(dane.getNip());
+
+                    // Zapisujemy w Postgresie
+                    Uzytkownik zapisany = uzytkownikRepository.save(uzytkownik);
+                    return ResponseEntity.ok(zapisany);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

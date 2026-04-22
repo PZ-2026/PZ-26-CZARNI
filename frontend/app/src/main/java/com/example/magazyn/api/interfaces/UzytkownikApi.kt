@@ -7,6 +7,7 @@ import retrofit2.Response
 import retrofit2.http.POST
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface UzytkownikApi {
@@ -18,4 +19,7 @@ interface UzytkownikApi {
 
     @POST("api/uzytkownicy/register")
     suspend fun register(@Body request: RegisterRequest): Response<Unit>
+
+    @PUT("api/uzytkownicy/{id}")
+    suspend fun update(@Path("id") id: Int, @Body uzytkownik: UzytkownikDTO): retrofit2.Response<UzytkownikDTO>
 }
