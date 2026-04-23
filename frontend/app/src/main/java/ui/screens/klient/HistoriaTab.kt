@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.magazyn.utils.StatusBadge
 
 // Model danych dla historii
 data class ZamowienieHistoryczne(
@@ -25,15 +26,15 @@ data class ZamowienieHistoryczne(
     val data: String,
     val liczbaProduktow: Int,
     val kwota: Double,
-    val status: String // "W TRAKCIE" lub "ZREALIZOWANE"
+    val status: Int // "W TRAKCIE" lub "ZREALIZOWANE"
 )
 
 @Composable
 fun HistoriaTab() {
     val historia = listOf(
-        ZamowienieHistoryczne("1042", "2024-03-20 14:30", 12, 450.50, "W TRAKCIE"),
-        ZamowienieHistoryczne("1041", "2024-03-15 09:15", 45, 1250.00, "ZREALIZOWANE"),
-        ZamowienieHistoryczne("1038", "2024-03-10 11:00", 8, 320.00, "ZREALIZOWANE")
+        ZamowienieHistoryczne("1042", "2024-03-20 14:30", 12, 450.50, 0),
+        ZamowienieHistoryczne("1041", "2024-03-15 09:15", 45, 1250.00, 1),
+        ZamowienieHistoryczne("1038", "2024-03-10 11:00", 8, 320.00, 2)
     )
 
     Column(
@@ -61,10 +62,12 @@ fun HistoriaTab() {
 
 @Composable
 fun HistoryItem(zamowienie: ZamowienieHistoryczne) {
-    val isPending = zamowienie.status == "W TRAKCIE"
-    val accentColor = if (isPending) Color(0xFFE6A34F) else Color(0xFF5D4037)
-    val statusBg = if (isPending) Color(0xFFFFF7ED) else Color(0xFFFDF2F2)
-    val statusText = if (isPending) Color(0xFFB45309) else Color(0xFF991B1B)
+    val accentColor = when (zamowienie.status) {
+        0 -> Color(0xFFB45309)
+        1 -> Color(0xFF047857)
+        2 -> Color(0xFF1D4ED8)
+        else -> Color(0x000000FF)
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -106,31 +109,7 @@ fun HistoryItem(zamowienie: ZamowienieHistoryczne) {
                             fontSize = 15.sp
                         )
                     }
-
-                    // PLAKIETKA STATUSU
-                    Surface(
-                        color = statusBg,
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                if (isPending) Icons.Default.Schedule else Icons.Default.CheckCircleOutline,
-                                null,
-                                modifier = Modifier.size(12.dp),
-                                tint = statusText
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                zamowienie.status,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = statusText
-                            )
-                        }
-                    }
+                    StatusBadge(zamowienie.status)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
