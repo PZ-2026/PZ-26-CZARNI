@@ -157,7 +157,8 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Unit) {
                                 kotlinx.coroutines.delay(1500)
                                 onRegisterSuccess()
                             } else {
-                                errorMessage = "Błąd rejestracji: ${response.code()}"
+                                val errorText = response.errorBody()?.string() ?: "Wystąpił błąd"
+                                errorMessage = errorText
                             }
                         } catch (e: Exception) {
                             errorMessage = "Błąd połączenia: ${e.localizedMessage}"
