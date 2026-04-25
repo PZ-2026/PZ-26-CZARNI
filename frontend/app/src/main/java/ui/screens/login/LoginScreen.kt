@@ -11,7 +11,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.magazyn.UserRole
 import com.example.magazyn.ui.theme.DeepBurgundy
 import androidx.compose.ui.platform.LocalUriHandler
 import com.example.magazyn.api.ApiConnector
@@ -26,6 +25,7 @@ fun LoginScreen(onLoginSuccess: (UzytkownikDTO) -> Unit, onNavigateToRegister: (
     val scope = rememberCoroutineScope()
 
     val uriHandler = LocalUriHandler.current
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
         modifier = Modifier
@@ -80,7 +80,7 @@ fun LoginScreen(onLoginSuccess: (UzytkownikDTO) -> Unit, onNavigateToRegister: (
             Button(
                 onClick = {
                     scope.launch {
-                        val uzytkownik = ApiConnector.login(login, password)
+                        val uzytkownik = ApiConnector.login(context, login,password)
 
                         if (uzytkownik != null) {
                             onLoginSuccess(uzytkownik)
