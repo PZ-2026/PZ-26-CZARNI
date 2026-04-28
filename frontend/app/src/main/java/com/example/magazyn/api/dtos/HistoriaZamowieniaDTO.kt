@@ -16,5 +16,8 @@ data class HistoriaZamowieniaDTO(
     val status: Int,
 
     @SerializedName("sumaProduktow")
-    val sumaProduktow: Long
+    val sumaProduktow: Int,
+
+    @SerializedName("kwota")
+    val kwota: Float
 )

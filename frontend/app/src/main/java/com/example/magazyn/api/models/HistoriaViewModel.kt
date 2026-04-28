@@ -1,6 +1,9 @@
 package com.example.magazyn.api.models
 
+import android.util.Log
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.magazyn.api.DataSyncManager
@@ -10,7 +13,7 @@ import kotlinx.coroutines.launch
 
 class HistoriaViewModel : ViewModel() {
     // Stan przechowujący listę zamówień
-    var historiaList = mutableStateOf<List<HistoriaZamowieniaDTO>>(emptyList())
+    var historiaList by mutableStateOf<List<HistoriaZamowieniaDTO>>(emptyList())
     var isLoading = mutableStateOf(false)
     var errorMessage = mutableStateOf<String?>(null)
 
@@ -20,7 +23,22 @@ class HistoriaViewModel : ViewModel() {
             try {
                 // Wywołanie API
                 val response = RetrofitInstance.zamowieniaApi.getHistoriaZamowien(uzytkownikId)
-                historiaList.value = response
+                historiaList = response
+            } catch (e: Exception) {
+                errorMessage.value = "Błąd pobierania danych: ${e.message}"
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+
+    fun fetchHistoriaKlient(uzytkownikId: Int) {
+        viewModelScope.launch {
+            isLoading.value = true
+            try {
+                // Wywołanie API
+                val response = RetrofitInstance.zamowieniaApi.getHistoriaZamowienKlient(uzytkownikId)
+                historiaList = response
             } catch (e: Exception) {
                 errorMessage.value = "Błąd pobierania danych: ${e.message}"
             } finally {

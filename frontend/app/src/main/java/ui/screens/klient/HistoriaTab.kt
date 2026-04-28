@@ -1,5 +1,6 @@
 package ui.screens.klient
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,30 +13,23 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.magazyn.api.dtos.HistoriaZamowieniaDTO
+import com.example.magazyn.api.models.HistoriaViewModel
 import com.example.magazyn.utils.StatusBadge
 
-// Model danych dla historii
-data class ZamowienieHistoryczne(
-    val id: String,
-    val data: String,
-    val liczbaProduktow: Int,
-    val kwota: Double,
-    val status: Int // "W TRAKCIE" lub "ZREALIZOWANE"
-)
-
 @Composable
-fun HistoriaTab() {
-    val historia = listOf(
-        ZamowienieHistoryczne("1042", "2024-03-20 14:30", 12, 450.50, 0),
-        ZamowienieHistoryczne("1041", "2024-03-15 09:15", 45, 1250.00, 1),
-        ZamowienieHistoryczne("1038", "2024-03-10 11:00", 8, 320.00, 2)
-    )
+fun HistoriaTab(id: Int, historiaViewModel: HistoriaViewModel = viewModel<HistoriaViewModel>()) {
+    LaunchedEffect(id) {
+        historiaViewModel.fetchHistoriaKlient(id)
+    }
 
     Column(
         modifier = Modifier
@@ -53,7 +47,7 @@ fun HistoriaTab() {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(bottom = 20.dp)
         ) {
-            items(historia) { zamowienie ->
+            items(historiaViewModel.historiaList) { zamowienie ->
                 HistoryItem(zamowienie)
             }
         }
@@ -61,7 +55,7 @@ fun HistoriaTab() {
 }
 
 @Composable
-fun HistoryItem(zamowienie: ZamowienieHistoryczne) {
+fun HistoryItem(zamowienie: HistoriaZamowieniaDTO) {
     val accentColor = when (zamowienie.status) {
         0 -> Color(0xFFB45309)
         1 -> Color(0xFF047857)
@@ -137,7 +131,7 @@ fun HistoryItem(zamowienie: ZamowienieHistoryczne) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Produkty: ${zamowienie.liczbaProduktow} szt.",
+                        "Produkty: ${zamowienie.sumaProduktow} szt.",
                         fontSize = 13.sp,
                         color = Color.Gray
                     )

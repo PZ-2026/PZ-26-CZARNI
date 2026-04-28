@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.magazyn.api.RetrofitInstance
+import com.example.magazyn.api.dtos.HistoriaZamowieniaDTO
 import com.example.magazyn.api.dtos.UzytkownikDTO
 import kotlinx.coroutines.launch
 

@@ -12,4 +12,5 @@ public class HistoriaZamowieniaDTO {
     private String nazwaDostawcy;
     private Integer status;
     private Long sumaProduktow;
+    private Float kwota;
 }

@@ -57,7 +57,7 @@ fun HistoriaTab(uzytkownikId: Int, viewModel: HistoriaViewModel = viewModel()) {
             viewModel.fetchHistoria(uzytkownikId)
         }
 
-        val historia by viewModel.historiaList
+        val historia = viewModel.historiaList
         val loading by viewModel.isLoading
         val error by viewModel.errorMessage
 

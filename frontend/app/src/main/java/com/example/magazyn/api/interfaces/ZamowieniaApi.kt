@@ -25,4 +25,9 @@ interface ZamowieniaApi {
         @Path("id") id: Int,
         @Query("nowyStatus") nowyStatus: Int
     ): Response<Unit>
+
+    @GET("api/zamowienia/historiaklient/{uzytkownikId}")
+    suspend fun getHistoriaZamowienKlient(
+        @Path("uzytkownikId") id: Int
+    ): List<HistoriaZamowieniaDTO>
 }
