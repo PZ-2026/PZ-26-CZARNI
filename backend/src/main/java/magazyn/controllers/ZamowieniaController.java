@@ -33,7 +33,7 @@ public class ZamowieniaController {
     private HistoriaKlientaRepository historiaKlientaRepository;
 
     @GetMapping("/historia/{uzytkownikId}")
-    public List<HistoriaZamowieniaDTO> getHistoria(@PathVariable Integer uzytkownikId) {
+    public List<HistoriaZamowieniaDTO> getHistoria(@PathVariable("uzytkownikId") Integer uzytkownikId) {
         return repository.findHistoriaByUzytkownik(uzytkownikId);
     }
     @GetMapping("historiaklient/{uzytkownikId}")

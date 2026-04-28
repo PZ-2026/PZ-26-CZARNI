@@ -27,6 +27,8 @@ import ui.screens.login.LoginScreen
 import ui.screens.zaopatrzeniowiec.ZaopatrzeniowiecDashboard
 import ui.screens.login.RegisterScreen
 import ui.screens.magazynier.MagazynierDashboard
+import androidx.compose.runtime.LaunchedEffect
+import com.example.magazyn.api.ApiConnector
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,34 +37,54 @@ class MainActivity : ComponentActivity() {
         setContent {
             MagazynTheme {
                 var currentUser by remember { mutableStateOf<UzytkownikDTO?>(null) }
+                var isCheckingSession by remember { mutableStateOf(true) }
                 var isRegistering by remember { mutableStateOf(false) }
-                val handleLogout = { currentUser = null }
+
+                LaunchedEffect(Unit) {
+                    val prefs = getSharedPreferences("sesja", MODE_PRIVATE)
+                    val token = prefs.getString("auth_token", null)
+
+                    if (token != null) {
+                        val user = ApiConnector.weryfikujSesjeNaSerwerze(token)
+                        if (user != null) {
+                            currentUser = user // To wywoła recompozycję i pokaże Dashboard niżej
+                        }
+                    }
+                    isCheckingSession = false
+                }
+
+                val handleLogout = {
+                    // Czyścimy token przy wylogowaniu
+                    getSharedPreferences("sesja", MODE_PRIVATE).edit().clear().apply()
+                    currentUser = null
+                }
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    if (isRegistering) {
+                    if (isCheckingSession) {
+                        PlaceholderScreen("Ładowanie sesji...", {})
+                    } else if (isRegistering) {
                         RegisterScreen(
                             onRegisterSuccess = { isRegistering = false },
                             onBackToLogin = { isRegistering = false }
                         )
+                    } else if (currentUser == null) {
+                        LoginScreen(
+                            onLoginSuccess = { user -> currentUser = user },
+                            onNavigateToRegister = { isRegistering = true }
+                        )
                     } else {
-                        if (currentUser == null) {
-                            LoginScreen(
-                                onLoginSuccess = { user -> currentUser = user },
-                                onNavigateToRegister = { isRegistering = true }
-                            )
+                        // Wyświetlanie dashboardów
+                        when (currentUser?.rola) {
+                            0 -> KlientDashboard(currentUser!!, handleLogout)
+                            1 -> MagazynierDashboard(currentUser!!, handleLogout)
+                            2 -> ZaopatrzeniowiecDashboard(currentUser!!, handleLogout)
+                            3 -> AdminDashboard(handleLogout)
+                            else -> PlaceholderScreen("Nieznana rola", handleLogout)
                         }
-                        else {
-                            when (currentUser?.rola) {
-                                0 -> KlientDashboard(currentUser!!,handleLogout)
-                                1 -> MagazynierDashboard(currentUser, handleLogout) 
-                                2 -> ZaopatrzeniowiecDashboard(currentUser,handleLogout)
-                                3 -> AdminDashboard(handleLogout)
-                                else -> PlaceholderScreen("Nieznana rola", handleLogout)
-                            }
-                        }
+
                     }
                 }
             }

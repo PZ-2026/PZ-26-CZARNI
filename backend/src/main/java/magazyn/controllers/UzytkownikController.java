@@ -1,10 +1,15 @@
 package magazyn.controllers;
 
+import jakarta.validation.Valid;
+import magazyn.entity.Sesja;
 import magazyn.entity.Uzytkownik;
+import magazyn.repository.SesjaRepository;
 import magazyn.repository.UzytkownikRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/uzytkownicy")
@@ -12,6 +17,10 @@ public class UzytkownikController {
 
     @Autowired
     private UzytkownikRepository uzytkownikRepository;
+
+    @Autowired
+    private SesjaRepository sesjaRepository;
+
 
     @GetMapping("/{id}")
     public ResponseEntity<Uzytkownik> getProfil(@PathVariable Integer id) {
@@ -28,7 +37,16 @@ public class UzytkownikController {
         return uzytkownikRepository.findByEmail(login)
                 .map(user -> {
                     if (user.getHaslo().equals(haslo)) {
-                        return ResponseEntity.ok(user);
+                        String token = java.util.UUID.randomUUID().toString();
+
+                        Sesja nowaSesja = new Sesja(token, user, 30);
+                        sesjaRepository.save(nowaSesja);
+
+                        java.util.Map<String, Object> response = new java.util.HashMap<>();
+                        response.put("uzytkownik", user);
+                        response.put("token", token);
+
+                        return ResponseEntity.ok(response);
                     }
                     else {
                         return ResponseEntity.status(401).body("Błędne haslo");
@@ -38,8 +56,12 @@ public class UzytkownikController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Uzytkownik nowyUzytkownik) {
+    public ResponseEntity<?> register(@Valid @RequestBody Uzytkownik nowyUzytkownik, BindingResult result) {
         try {
+            if (result.hasErrors()) {
+                return ResponseEntity.badRequest().body(result.getFieldError().getDefaultMessage());
+            }
+
             if (uzytkownikRepository.findByEmail(nowyUzytkownik.getEmail()).isPresent()) {
                 return ResponseEntity.status(400).body("Podany email jest zajety");
             }
@@ -49,6 +71,20 @@ public class UzytkownikController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Błąd podczas rejestracji: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getMe(@RequestHeader("Authorization") String token) {
+        String cleanToken = token.replace("Bearer ", "");
+
+        return sesjaRepository.findByToken(cleanToken)
+                .map(sesja -> {
+                    if (sesja.getDataWygasniecia().isAfter(LocalDateTime.now())) {
+                        return ResponseEntity.ok(sesja.getUzytkownik());
+                    }
+                    return ResponseEntity.status(401).body("Sesja wygasła");
+                })
+                .orElse(ResponseEntity.status(401).body("Nieprawidłowy token"));
     }
 
     @PutMapping("/{id}")
