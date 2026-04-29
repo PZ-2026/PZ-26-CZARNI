@@ -12,5 +12,6 @@
 /captures
 .externalNativeBuild
 .cxx
+application.properties
 local.properties
 /backend/src/main/resources/application.properties

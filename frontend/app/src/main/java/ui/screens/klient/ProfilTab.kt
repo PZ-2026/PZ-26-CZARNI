@@ -1,5 +1,6 @@
 package ui.screens.klient
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -17,13 +18,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.magazyn.api.dtos.UzytkownikDTO
 import com.example.magazyn.utils.getRolaName
+import com.example.magazyn.api.RetrofitInstance
+import com.example.magazyn.api.models.KlientViewModel
+import kotlinx.coroutines.launch
 
 @Composable
-fun ProfilTab(user: UzytkownikDTO?) {
-
+fun ProfilTab(user: UzytkownikDTO?, klientViewModel: KlientViewModel = viewModel<KlientViewModel>()) {
+    LaunchedEffect(user) {
+        klientViewModel.setup(user)
+    }
 
     // Stan przewijania
     val scrollState = rememberScrollState()
@@ -65,12 +79,34 @@ fun ProfilTab(user: UzytkownikDTO?) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "${user?.imie } ${user?.nazwisko}",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
+            if (klientViewModel.isEditing) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = klientViewModel.imie,
+                        onValueChange = { klientViewModel.imie = it },
+                        label = { Text("Imię") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = klientViewModel.nazwisko,
+                        onValueChange = { klientViewModel.nazwisko = it },
+                        label = { Text("Nazwisko") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                }
+            }
+            else {
+                Text(
+                    text = "${klientViewModel.imie} ${klientViewModel.nazwisko}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
             SuggestionChip(
                 onClick = { },
                 label = { Text(getRolaName(user?.rola)) },
@@ -93,24 +129,19 @@ fun ProfilTab(user: UzytkownikDTO?) {
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        "Dane kontaktowe",
+                        text = if (klientViewModel.isEditing) "Edytuj dane" else "Dane kontaktowe",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
-                    ImprovedInfoRow(icon = Icons.Default.Email, label = "Email", value = "${user?.email}")
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                    ImprovedInfoRow(icon = Icons.Default.Phone, label = "Telefon", value = "${user?.telefon}")
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                    if (!user?.firma.isNullOrBlank()) {
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                        ImprovedInfoRow(icon = Icons.Default.Business, label = "Firma", value = user!!.firma!!)
-                    }
-                    if (!user?.nip.isNullOrBlank()) {
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                        ImprovedInfoRow(icon = Icons.Default.CreditCard, label = "NIP", value = user!!.nip!!)
-                    }
+                    ImprovedInfoRow(Icons.Default.Email, "Email", klientViewModel.email, klientViewModel.isEditing, {klientViewModel.email = it})
+                    HorizontalDivider(Modifier.padding(vertical = 8.dp),0.5.dp)
+                    ImprovedInfoRow(Icons.Default.Phone, "Telefon", klientViewModel.telefon, klientViewModel.isEditing, {klientViewModel.telefon = it})
+                    HorizontalDivider(Modifier.padding(vertical = 8.dp), 0.5.dp)
+                    ImprovedInfoRow(Icons.Default.Business, "Firma",klientViewModel.firma, klientViewModel.isEditing, onValueChange = {klientViewModel.firma = it})
+                    HorizontalDivider(Modifier.padding(vertical = 8.dp), 0.5.dp)
+                    ImprovedInfoRow(Icons.Default.CreditCard,"NIP", klientViewModel.nip, klientViewModel.isEditing, {klientViewModel.nip = it})
                 }
             }
 
@@ -118,15 +149,18 @@ fun ProfilTab(user: UzytkownikDTO?) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { /* TODO: Edycja danych */ },
+                onClick = {
+                    klientViewModel.onButtonClicked()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
+
                 Icon(Icons.Default.Edit, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Edytuj dane profilowe")
+                Text(if (klientViewModel.isEditing) "Zapisz" else "Edytuj dane profilowe")
             }
 
             // Dodatkowy margines na dole, żeby przycisk nie dotykał krawędzi po przewinięciu
@@ -136,7 +170,7 @@ fun ProfilTab(user: UzytkownikDTO?) {
 }
 
 @Composable
-fun ImprovedInfoRow(icon: ImageVector, label: String, value: String) {
+fun ImprovedInfoRow(icon: ImageVector, label: String, value: String, isEditing: Boolean = false, onValueChange: (String) -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -164,11 +198,29 @@ fun ImprovedInfoRow(icon: ImageVector, label: String, value: String) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline
             )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            if (isEditing) {
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        .padding(4.dp)
+                )
+            } else {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }

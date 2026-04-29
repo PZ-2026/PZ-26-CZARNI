@@ -84,6 +84,7 @@ class MainActivity : ComponentActivity() {
                             3 -> AdminDashboard(handleLogout)
                             else -> PlaceholderScreen("Nieznana rola", handleLogout)
                         }
+
                     }
                 }
             }

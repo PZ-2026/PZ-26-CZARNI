@@ -71,7 +71,7 @@ fun KlientDashboard(user: UzytkownikDTO, onLogout: () -> Unit) {
             when (selectedItem.intValue) {
                 0 -> ProfilTab(user) // Tutaj wywołujemy Twój wygląd z obrazka
                 1 -> ZamowTab()
-                2 -> HistoriaTab()
+                2 -> HistoriaTab(user.id)
             }
         }
     }

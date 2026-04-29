@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDateTime;
 
 @RestController
@@ -86,5 +85,24 @@ public class UzytkownikController {
                     return ResponseEntity.status(401).body("Sesja wygasła");
                 })
                 .orElse(ResponseEntity.status(401).body("Nieprawidłowy token"));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Uzytkownik> updateUzytkownik(@PathVariable Integer id, @RequestBody Uzytkownik dane) {
+        return uzytkownikRepository.findById(id)
+                .map(uzytkownik -> {
+                    // Przepisujemy dane z DTO/Body do obiektu encji
+                    uzytkownik.setImie(dane.getImie());
+                    uzytkownik.setNazwisko(dane.getNazwisko());
+                    uzytkownik.setEmail(dane.getEmail());
+                    uzytkownik.setTelefon(dane.getTelefon());
+                    uzytkownik.setFirma(dane.getFirma());
+                    uzytkownik.setNip(dane.getNip());
+
+                    // Zapisujemy w Postgresie
+                    Uzytkownik zapisany = uzytkownikRepository.save(uzytkownik);
+                    return ResponseEntity.ok(zapisany);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }

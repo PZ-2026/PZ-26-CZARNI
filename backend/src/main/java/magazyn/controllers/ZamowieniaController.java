@@ -5,6 +5,7 @@ import magazyn.dto.HistoriaZamowieniaDTO;
 import magazyn.entity.StanMagazynu;
 import magazyn.entity.ZamowienieProduktyDostawcy;
 import magazyn.entity.ZamowienieZaopatrzeniowca;
+import magazyn.repository.HistoriaKlientaRepository;
 import magazyn.repository.StanMagazynuRepository;
 import magazyn.repository.ZamowieniaZaopatrzeniowiecRepository;
 import magazyn.repository.ZamowienieProduktyDostawcyRepository;
@@ -28,9 +29,16 @@ public class ZamowieniaController {
     @Autowired
     private StanMagazynuRepository stanMagazynuRepository;
 
+    @Autowired
+    private HistoriaKlientaRepository historiaKlientaRepository;
+
     @GetMapping("/historia/{uzytkownikId}")
     public List<HistoriaZamowieniaDTO> getHistoria(@PathVariable("uzytkownikId") Integer uzytkownikId) {
         return repository.findHistoriaByUzytkownik(uzytkownikId);
+    }
+    @GetMapping("historiaklient/{uzytkownikId}")
+    public List<HistoriaZamowieniaDTO> getHistoriaKlient(@PathVariable Integer uzytkownikId) {
+        return historiaKlientaRepository.findHistoriaKlienta(uzytkownikId);
     }
 
     @PutMapping("/{id}/status")
