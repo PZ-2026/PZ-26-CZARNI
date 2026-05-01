@@ -23,31 +23,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.BasicTextField
-
-// Model danych dla produktu
-data class Produkt(
-    val id: String,
-    val nazwa: String,
-    val kod: String,
-    val cena: Double,
-    val maxSztuk: Int
-)
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.magazyn.api.dtos.MagazynItemDTO
+import com.example.magazyn.api.models.HistoriaViewModel
+import com.example.magazyn.api.models.KlientViewModel
+import com.example.magazyn.data.api.dtos.ProduktDTO
 
 @Composable
-fun ZamowTab() {
+fun ZamowTab(id: Int, klientViewModel: KlientViewModel = viewModel<KlientViewModel>()) {
+    LaunchedEffect(Unit) {
+        klientViewModel.pobierzProdukty()
+    }
+    var produkty = klientViewModel.produkty
+
     var searchQuery by remember { mutableStateOf("") }
 
-    // Lista produktów
-    val produkty = listOf(
-        Produkt("1", "Mleko 3.2% 1L", "5364897348", 3.50, 45),
-        Produkt("2", "Chleb Żytni", "5348905348", 4.20, 5),
-        Produkt("3", "Masło Ekstra 200g", "34255647453", 7.99, 120),
-        Produkt("4", "Jaja Wolny Wybieg (10szt)", "564564547", 12.00, 30),
-        Produkt("5", "Mąka Pszenna 1kg", "574563373", 2.80, 50)
-    )
-
     // Stan przechowujący wybrane ilości: ID produktu -> Ilość
-    val wybraneIlosci = remember { mutableStateMapOf<String, Int>() }
+    val wybraneIlosci = remember { mutableStateMapOf<Int, Int>() }
 
     // Obliczanie sumy
     val sumaKoszyka = produkty.sumOf { (wybraneIlosci[it.id] ?: 0) * it.cena }
@@ -87,7 +79,7 @@ fun ZamowTab() {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 100.dp) // Miejsce na przycisk na dole
             ) {
-                items(produkty.filter { it.nazwa.contains(searchQuery, ignoreCase = true) }) { produkt ->
+                items(produkty.filter { it.nazwaProduktu.contains(searchQuery, ignoreCase = true) }) { produkt ->
                     ProduktItem(
                         produkt = produkt,
                         ilosc = wybraneIlosci[produkt.id] ?: 0,
@@ -136,7 +128,7 @@ fun ZamowTab() {
 }
 
 @Composable
-fun ProduktItem(produkt: Produkt, ilosc: Int, onIloscChange: (Int) -> Unit) {
+fun ProduktItem(produkt: MagazynItemDTO, ilosc: Int, onIloscChange: (Int) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -157,13 +149,13 @@ fun ProduktItem(produkt: Produkt, ilosc: Int, onIloscChange: (Int) -> Unit) {
             }
 
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                Text(produkt.nazwa, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Text("Kod: ${produkt.kod}", color = Color.Gray, fontSize = 11.sp)
+                Text(produkt.nazwaProduktu, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text("Kod: ${produkt.kodKreskowy}", color = Color.Gray, fontSize = 11.sp)
             }
 
             Column(horizontalAlignment = Alignment.End) {
                 Text("${String.format("%.2f", produkt.cena)} zł", fontWeight = FontWeight.Bold, color = Color(0xFF5D4037))
-                Text("Max: ${produkt.maxSztuk} szt.", color = Color.Gray, fontSize = 10.sp)
+                Text("Max: ${produkt.stanMagazynu!!.ilosc} ${produkt.stanMagazynu.jednostka}.", color = Color.Gray, fontSize = 10.sp)
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -186,7 +178,7 @@ fun ProduktItem(produkt: Produkt, ilosc: Int, onIloscChange: (Int) -> Unit) {
                             value = ilosc.toString(),
                             onValueChange = { newValue ->
                                 val num = newValue.toIntOrNull() ?: 0
-                                if (num <= produkt.maxSztuk) onIloscChange(num)
+                                if (num <= produkt.stanMagazynu.ilosc) onIloscChange(num)
                             },
                             textStyle = LocalTextStyle.current.copy(
                                 textAlign = TextAlign.Center,
@@ -198,7 +190,7 @@ fun ProduktItem(produkt: Produkt, ilosc: Int, onIloscChange: (Int) -> Unit) {
                         )
 
                         IconButton(
-                            onClick = { if (ilosc < produkt.maxSztuk) onIloscChange(ilosc + 1) },
+                            onClick = { if (ilosc < produkt.stanMagazynu.ilosc) onIloscChange(ilosc + 1) },
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))

@@ -45,4 +45,7 @@ object RetrofitInstance {
     val produktApi: ProduktApi by lazy {
         retrofit.create(ProduktApi::class.java)
     }
+    val magazynApi: MagazynApi by lazy {
+        retrofit.create(MagazynApi::class.java)
+    }
 }

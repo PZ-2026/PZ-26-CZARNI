@@ -8,7 +8,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.magazyn.api.RetrofitInstance
 import com.example.magazyn.api.dtos.HistoriaZamowieniaDTO
+import com.example.magazyn.api.dtos.MagazynItemDTO
 import com.example.magazyn.api.dtos.UzytkownikDTO
+import com.example.magazyn.data.api.dtos.ProduktDTO
 import kotlinx.coroutines.launch
 
 class KlientViewModel : ViewModel() {
@@ -23,6 +25,8 @@ class KlientViewModel : ViewModel() {
 
     var isEditing by mutableStateOf(false)
     var isLoading by mutableStateOf(true)
+
+    var produkty by mutableStateOf<List<MagazynItemDTO>>(emptyList())
 
     fun setup(user: UzytkownikDTO?) {
         if (user == null) return
@@ -73,6 +77,16 @@ class KlientViewModel : ViewModel() {
         }
         else {
             isEditing = true
+        }
+    }
+    fun pobierzProdukty(){
+        viewModelScope.launch {
+            try {
+                produkty = RetrofitInstance.magazynApi.getProdukty()
+            } catch (e: Exception) {
+            } finally {
+                isLoading = false
+            }
         }
     }
 }
