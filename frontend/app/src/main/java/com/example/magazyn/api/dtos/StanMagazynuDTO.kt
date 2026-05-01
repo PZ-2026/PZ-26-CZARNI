@@ -9,6 +9,6 @@ import com.google.gson.annotations.SerializedName
 data class StanMagazynuDTO(
     val id: Int,
     @SerializedName("ilosc")
-    val ilosc: Double,
+    val ilosc: Int,
     val jednostka: String
 )

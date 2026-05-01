@@ -2,6 +2,7 @@ package magazyn.controllers;
 
 import jakarta.transaction.Transactional;
 import magazyn.dto.HistoriaZamowieniaDTO;
+import magazyn.dto.NoweZamowienieRequest;
 import magazyn.entity.StanMagazynu;
 import magazyn.entity.ZamowienieProduktyDostawcy;
 import magazyn.entity.ZamowienieZaopatrzeniowca;
@@ -9,11 +10,14 @@ import magazyn.repository.HistoriaKlientaRepository;
 import magazyn.repository.StanMagazynuRepository;
 import magazyn.repository.ZamowieniaZaopatrzeniowiecRepository;
 import magazyn.repository.ZamowienieProduktyDostawcyRepository;
+import magazyn.service.ZamowienieKlientService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -31,6 +35,9 @@ public class ZamowieniaController {
 
     @Autowired
     private HistoriaKlientaRepository historiaKlientaRepository;
+
+    @Autowired
+    private ZamowienieKlientService zamowienieKlientService;
 
     @GetMapping("/historia/{uzytkownikId}")
     public List<HistoriaZamowieniaDTO> getHistoria(@PathVariable("uzytkownikId") Integer uzytkownikId) {
@@ -79,6 +86,18 @@ public class ZamowieniaController {
             return ResponseEntity.ok().build();
         } else {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/klient")
+    public ResponseEntity<String> zlozZamowienie(@RequestBody NoweZamowienieRequest request) {
+        try {
+            zamowienieKlientService.zlozZamowienie(request);
+            return ResponseEntity.ok("Zamówienie złożone!"); // OK 200
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage()); // Conflict 409
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Błąd serwera"); // Error 500
         }
     }
 }

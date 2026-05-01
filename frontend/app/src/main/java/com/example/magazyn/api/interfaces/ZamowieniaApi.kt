@@ -31,6 +31,6 @@ interface ZamowieniaApi {
         @Path("uzytkownikId") id: Int
     ): List<HistoriaZamowieniaDTO>
 
-    @POST("api/zamowienia/klient/")
-    suspend fun zlozZamowienie(@Path("id") id: Int, @Body request: NoweZamowienieRequest): Response<Unit>
+    @POST("api/zamowienia/klient")
+    suspend fun zlozZamowienieKlient(@Body request: NoweZamowienieRequest): Response<Unit>
 }

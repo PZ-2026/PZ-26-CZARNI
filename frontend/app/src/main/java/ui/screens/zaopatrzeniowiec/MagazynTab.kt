@@ -24,7 +24,7 @@ data class MagazynItem(
     val nazwa: String,
     val kodKreskowy: String,
     val cena: Double,
-    val ilosc: Double,
+    val ilosc: Int,
     val jednostka: String
 )
 
@@ -44,8 +44,8 @@ fun MagazynTab(viewModel: MagazynViewModel = viewModel()) {
         .filter { it.nazwaProduktu.contains(searchQuery, ignoreCase = true) }
         .let { list ->
             when (sortAscending) {
-                true -> list.sortedBy { it.stanMagazynu?.ilosc ?: 0.0 }
-                false -> list.sortedByDescending { it.stanMagazynu?.ilosc ?: 0.0 }
+                true -> list.sortedBy { it.stanMagazynu?.ilosc ?: 0 }
+                false -> list.sortedByDescending { it.stanMagazynu?.ilosc ?: 0 }
                 else -> list
             }
         }
@@ -130,7 +130,7 @@ fun ProduktCardFromDB(produkt: MagazynItemDTO) {
             nazwa = produkt.nazwaProduktu,
             kodKreskowy = produkt.kodKreskowy,
             cena = produkt.cena,
-            ilosc = produkt.stanMagazynu?.ilosc ?: 0.0,
+            ilosc = produkt.stanMagazynu?.ilosc ?: 0,
             jednostka = produkt.stanMagazynu?.jednostka ?: "szt."
         )
     )
