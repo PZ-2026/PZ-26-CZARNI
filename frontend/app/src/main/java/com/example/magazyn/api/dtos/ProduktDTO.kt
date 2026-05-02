@@ -19,5 +19,5 @@ data class ProduktDTO(
     val cena: Double,
 
     @SerializedName("idDostawcy")
-    val idDostawcy: Int
+    val idDostawcy: Int,
 )
