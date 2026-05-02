@@ -1,5 +1,6 @@
 package ui.screens.klient
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.magazyn.api.dtos.MagazynItemDTO
 import com.example.magazyn.api.models.HistoriaViewModel
@@ -34,16 +36,6 @@ fun ZamowTab(id: Int, klientViewModel: KlientViewModel = viewModel<KlientViewMod
     LaunchedEffect(Unit) {
         klientViewModel.pobierzProdukty()
     }
-    var produkty = klientViewModel.produkty
-
-    var searchQuery by remember { mutableStateOf("") }
-
-    // Stan przechowujący wybrane ilości: ID produktu -> Ilość
-    val wybraneIlosci = remember { mutableStateMapOf<Int, Int>() }
-
-    // Obliczanie sumy
-    val sumaKoszyka = produkty.sumOf { (wybraneIlosci[it.id] ?: 0) * it.cena }
-    val liczbaProduktow = wybraneIlosci.values.sumOf { it }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -60,8 +52,8 @@ fun ZamowTab(id: Int, klientViewModel: KlientViewModel = viewModel<KlientViewMod
 
             // PASEK WYSZUKIWANIA
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+                value = klientViewModel.searchQuery,
+                onValueChange = { klientViewModel.searchQuery = it },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                 placeholder = { Text("Szukaj produktu...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
@@ -79,13 +71,12 @@ fun ZamowTab(id: Int, klientViewModel: KlientViewModel = viewModel<KlientViewMod
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 100.dp) // Miejsce na przycisk na dole
             ) {
-                items(produkty.filter { it.nazwaProduktu.contains(searchQuery, ignoreCase = true) }) { produkt ->
+                items(klientViewModel.filtrowaneProdukty) { produkt ->
                     ProduktItem(
                         produkt = produkt,
-                        ilosc = wybraneIlosci[produkt.id] ?: 0,
-                        onIloscChange = { nowaIlosc ->
-                            if (nowaIlosc > 0) wybraneIlosci[produkt.id] = nowaIlosc
-                            else wybraneIlosci.remove(produkt.id)
+                        ilosc = klientViewModel.wybraneIlosci[produkt.id] ?: 0,
+                        onIloscChange = { nowa ->
+                            klientViewModel.aktualizujIlosc(produkt.id, nowa, produkt.stanMagazynu!!.ilosc)
                         }
                     )
                 }
@@ -93,7 +84,7 @@ fun ZamowTab(id: Int, klientViewModel: KlientViewModel = viewModel<KlientViewMod
         }
 
         // PRZYCISK ZAMÓWIENIA NA DOLE
-        if (liczbaProduktow > 0) {
+        if (klientViewModel.wybraneIlosci.isNotEmpty()) {
             Surface(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -110,12 +101,17 @@ fun ZamowTab(id: Int, klientViewModel: KlientViewModel = viewModel<KlientViewMod
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Razem: ${String.format("%.2f", sumaKoszyka)} zł", color = Color.White, fontWeight = FontWeight.Bold)
-                        Text("$liczbaProduktow poz.", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                        Text("Razem: ${String.format("%.2f", klientViewModel.sumaKoszyka)} zł", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("${klientViewModel.wybraneIlosci.size} poz.", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
                     }
-
+                    val context = LocalContext.current
                     Button(
-                        onClick = { /* Tu logika wysyłania zamówienia do bazy */ },
+                        onClick = {
+                            klientViewModel.zlozZamowienie(id) { status ->
+                                Toast.makeText(context, status, Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        enabled = !klientViewModel.isSending,
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                         shape = RoundedCornerShape(12.dp)
                     ) {
