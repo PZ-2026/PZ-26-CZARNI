@@ -16,14 +16,8 @@ public class StanMagazynu {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(length = 20, nullable = false)
-    private String jednostka;
-
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal ilosc;
-
-    @Column(columnDefinition = "text")
-    private String strefa = "strefa_A";
 
     @OneToOne
     @JoinColumn(name = "id_produktu")

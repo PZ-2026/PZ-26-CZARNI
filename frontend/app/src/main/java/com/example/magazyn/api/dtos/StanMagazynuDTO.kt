@@ -10,5 +10,4 @@ data class StanMagazynuDTO(
     val id: Int,
     @SerializedName("ilosc")
     val ilosc: Int,
-    val jednostka: String
 )

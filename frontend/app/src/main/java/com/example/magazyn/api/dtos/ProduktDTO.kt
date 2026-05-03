@@ -20,4 +20,6 @@ data class ProduktDTO(
 
     @SerializedName("idDostawcy")
     val idDostawcy: Int,
+
+    val jednostka: String
 )

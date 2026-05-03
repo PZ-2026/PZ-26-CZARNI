@@ -33,4 +33,10 @@ public class Produkt {
     @OneToOne(mappedBy = "produkt", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("produkt")
     private StanMagazynu stanMagazynu;
+
+    @Column(length = 20, nullable = false)
+    private String jednostka;
+
+    @Column(columnDefinition = "text")
+    private String strefa = "strefa_A";
 }

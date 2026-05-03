@@ -131,7 +131,7 @@ fun ProduktCardFromDB(produkt: MagazynItemDTO) {
             kodKreskowy = produkt.kodKreskowy,
             cena = produkt.cena,
             ilosc = produkt.stanMagazynu?.ilosc ?: 0,
-            jednostka = produkt.stanMagazynu?.jednostka ?: "szt."
+            jednostka = produkt.jednostka ?: "szt."
         )
     )
 }

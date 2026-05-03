@@ -7,5 +7,6 @@ data class MagazynItemDTO(
     val nazwaProduktu: String,
     val kodKreskowy: String,
     val cena: Double,
+    val jednostka: String,
     val stanMagazynu: StanMagazynuDTO?
 )
