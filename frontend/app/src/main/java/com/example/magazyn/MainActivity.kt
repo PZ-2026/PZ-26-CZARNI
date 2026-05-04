@@ -47,14 +47,13 @@ class MainActivity : ComponentActivity() {
                     if (token != null) {
                         val user = ApiConnector.weryfikujSesjeNaSerwerze(token)
                         if (user != null) {
-                            currentUser = user // To wywoła recompozycję i pokaże Dashboard niżej
+                            currentUser = user
                         }
                     }
                     isCheckingSession = false
                 }
 
                 val handleLogout = {
-                    // Czyścimy token przy wylogowaniu
                     getSharedPreferences("sesja", MODE_PRIVATE).edit().clear().apply()
                     currentUser = null
                 }
@@ -76,11 +75,10 @@ class MainActivity : ComponentActivity() {
                             onNavigateToRegister = { isRegistering = true }
                         )
                     } else {
-                        // Wyświetlanie dashboardów
                         when (currentUser?.rola) {
                             0 -> KlientDashboard(currentUser!!, handleLogout)
-                            1 -> MagazynierDashboard(currentUser!!, handleLogout)
-                            2 -> ZaopatrzeniowiecDashboard(currentUser!!, handleLogout)
+                            1 -> MagazynierDashboard(currentUser, onLogout = handleLogout)
+                            2 -> ZaopatrzeniowiecDashboard(currentUser, onLogut = handleLogout)
                             3 -> AdminDashboard(handleLogout)
                             else -> PlaceholderScreen("Nieznana rola", handleLogout)
                         }
