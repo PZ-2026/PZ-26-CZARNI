@@ -31,9 +31,8 @@ data class DostawcaItem(
 @Composable
 fun DostawcyTab(
     viewModel: DostawcyViewModel = viewModel(),
-    uzytkownikId: Int = 4 // <-- Przekazujemy ID zalogowanego zaopatrzeniowca
+    uzytkownikId: Int = 4
 ) {
-    // 1. Zmienna trzymająca wybranego dostawcę (null = brak, pokazujemy listę)
     var wybranyDostawca by remember { mutableStateOf<DostawcaItem?>(null) }
 
     // Jeśli jakiś dostawca jest wybrany, pokaż ekran zamawiania
@@ -42,7 +41,7 @@ fun DostawcyTab(
             idDostawcy = wybranyDostawca!!.id,
             nazwaDostawcy = wybranyDostawca!!.nazwa,
             idUzytkownika = uzytkownikId,
-            onNavigateBack = { wybranyDostawca = null } // <-- Wyzerowanie stanu wraca do listy
+            onNavigateBack = { wybranyDostawca = null }
         )
     }
     // Jeśli nie, pokaż normalną listę dostawców
@@ -74,8 +73,6 @@ fun DostawcyTab(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)){
-                // ... (Twój kod nagłówka i wyszukiwarki) ...
-
                 if (loading) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -92,7 +89,6 @@ fun DostawcyTab(
                         contentPadding = PaddingValues(bottom = 100.dp)
                     ) {
                         items(processedDostawcy, key = { it.id }) { dostawca ->
-                            // PRZEKAZUJEMY FUNKCJĘ KLIKNIĘCIA
                             DostawcaCard(
                                 dostawca = dostawca,
                                 onZamowClick = {
@@ -106,9 +102,6 @@ fun DostawcyTab(
         }
     }
 }
-
-// Komponenty DostawcaCard i DostawcaInfoRow pozostają DOKŁADNIE takie, jakie były w Twoim kodzie.
-// Wklej je poniżej funkcji DostawcyTab.
 
 @Composable
 fun DostawcaCard(dostawca: DostawcaItem, onZamowClick: () -> Unit) {
