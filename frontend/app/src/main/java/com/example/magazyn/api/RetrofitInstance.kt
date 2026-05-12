@@ -6,7 +6,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 object RetrofitInstance {
-    private const val BASE_URL = "http://localhost:8080/" // lokalny adres ip komputera, powinno działać
+    private const val BASE_URL = "http://10.0.2.2:8080/" // lokalny adres ip komputera, powinno działać
                                                              // dla emulatora adres to: http://10.0.2.2:8080/
 
     // jezeli adres lokalny nie dziala to:

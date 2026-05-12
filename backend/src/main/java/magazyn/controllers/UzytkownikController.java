@@ -1,6 +1,7 @@
 package magazyn.controllers;
 
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import magazyn.entity.Sesja;
 import magazyn.entity.Uzytkownik;
 import magazyn.repository.SesjaRepository;
@@ -10,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
-
+@Slf4j // Ta adnotacja generuje pole 'log' automatycznie [cite: 92]
 @RestController
 @RequestMapping("/api/uzytkownicy")
 public class UzytkownikController {
@@ -29,10 +30,14 @@ public class UzytkownikController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody java.util.Map<String, String> credentials) {
         String login = credentials.get("login");
         String haslo = credentials.get("haslo");
+
+        // Logujemy próbę logowania na poziomie DEBUG lub INFO
+        log.info("Próba logowania dla użytkownika: {}", login);
 
         return uzytkownikRepository.findByEmail(login)
                 .map(user -> {
@@ -42,17 +47,25 @@ public class UzytkownikController {
                         Sesja nowaSesja = new Sesja(token, user, 30);
                         sesjaRepository.save(nowaSesja);
 
+                        // Logowanie sukcesu
+                        log.info("Użytkownik {} zalogowany pomyślnie. Wygenerowano token.", login);
+
                         java.util.Map<String, Object> response = new java.util.HashMap<>();
                         response.put("uzytkownik", user);
                         response.put("token", token);
 
                         return ResponseEntity.ok(response);
-                    }
-                    else {
+                    } else {
+                        // Logowanie ostrzeżenia - ktoś zna login, ale podaje złe hasło
+                        log.warn("Nieudana próba logowania: Błędne hasło dla użytkownika {}", login);
                         return ResponseEntity.status(401).body("Błędne haslo");
                     }
-                        })
-                .orElse(ResponseEntity.status(404).body("Błędne dane logowania."));
+                })
+                .orElseGet(() -> {
+                    // Logowanie błędu/ostrzeżenia - brak użytkownika w bazie
+                    log.warn("Nieudana próba logowania: Nie znaleziono użytkownika o loginie {}", login);
+                    return ResponseEntity.status(404).body("Błędne dane logowania.");
+                });
     }
 
     @PostMapping("/register")
