@@ -5,6 +5,7 @@
 *.swo
 *~
 .vscode/
+.idea 
 
 ## Gradle
 .gradle/
@@ -19,6 +20,7 @@ dist/
 bin/
 out/
 target/
+app/build
 
 ## Android specific
 local.properties
