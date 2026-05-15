@@ -16,10 +16,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.magazyn.api.dtos.DostawcaDTO
 import com.example.magazyn.api.models.DostawcyViewModel
 
-// Twój model do wyświetlania pozostaje bez zmian
+// Model danych
 data class DostawcaItem(
     val id: Int,
     val nazwa: String,
@@ -34,8 +33,13 @@ fun DostawcyTab(
     uzytkownikId: Int = 4
 ) {
     var wybranyDostawca by remember { mutableStateOf<DostawcaItem?>(null) }
+    var searchQuery by remember { mutableStateOf("") } // Stan dla wyszukiwarki
 
-    // Jeśli jakiś dostawca jest wybrany, pokaż ekran zamawiania
+    // Wyzwalanie pobierania danych
+    LaunchedEffect(Unit) {
+        viewModel.fetchDostawcy()
+    }
+
     if (wybranyDostawca != null) {
         NoweZamowienieScreen(
             idDostawcy = wybranyDostawca!!.id,
@@ -43,19 +47,12 @@ fun DostawcyTab(
             idUzytkownika = uzytkownikId,
             onNavigateBack = { wybranyDostawca = null }
         )
-    }
-    // Jeśli nie, pokaż normalną listę dostawców
-    else {
-        var searchQuery by remember { mutableStateOf("") }
-
-        LaunchedEffect(Unit) {
-            viewModel.fetchDostawcy()
-        }
-
+    } else {
         val dostawcy by viewModel.dostawcyList
         val loading by viewModel.isLoading
         val error by viewModel.errorMessage
 
+        // Logika filtrowania
         val processedDostawcy = remember(dostawcy, searchQuery) {
             val mappedList = dostawcy.map { dto ->
                 DostawcaItem(dto.id, dto.nazwa, dto.adres, dto.telefon)
@@ -72,7 +69,32 @@ fun DostawcyTab(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)){
+            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+
+                // --- POLE FILTROWANIA (DODANE) ---
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    placeholder = { Text("Szukaj dostawcy po nazwie...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Wyczyść")
+                            }
+                        }
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+
                 if (loading) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -81,7 +103,7 @@ fun DostawcyTab(
                     Text(text = error!!, color = Color.Red, modifier = Modifier.padding(16.dp))
                 } else if (processedDostawcy.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Brak dostawców do wyświetlenia.", color = MaterialTheme.colorScheme.outline)
+                        Text("Brak dostawców spełniających kryteria.", color = MaterialTheme.colorScheme.outline)
                     }
                 } else {
                     LazyColumn(
@@ -91,9 +113,7 @@ fun DostawcyTab(
                         items(processedDostawcy, key = { it.id }) { dostawca ->
                             DostawcaCard(
                                 dostawca = dostawca,
-                                onZamowClick = {
-                                    wybranyDostawca = dostawca
-                                }
+                                onZamowClick = { wybranyDostawca = dostawca }
                             )
                         }
                     }
@@ -103,6 +123,7 @@ fun DostawcyTab(
     }
 }
 
+// Funkcja pomocnicza karty i wiersza info pozostają bez zmian (jak w Twoim kodzie)
 @Composable
 fun DostawcaCard(dostawca: DostawcaItem, onZamowClick: () -> Unit) {
     ElevatedCard(
@@ -118,38 +139,19 @@ fun DostawcaCard(dostawca: DostawcaItem, onZamowClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.LocalShipping,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Icon(Icons.Default.LocalShipping, null, tint = MaterialTheme.colorScheme.primary)
                     }
                 }
-
                 Spacer(modifier = Modifier.width(16.dp))
-
-                Text(
-                    text = dostawca.nazwa,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
+                Text(dostawca.nazwa, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             }
-
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp)
-
             DostawcaInfoRow(icon = Icons.Default.LocationOn, text = dostawca.adres)
             Spacer(modifier = Modifier.height(8.dp))
             DostawcaInfoRow(icon = Icons.Default.Phone, text = dostawca.telefon)
-
             Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedButton(
-                onClick = onZamowClick,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
+            OutlinedButton(onClick = onZamowClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                Icon(Icons.Default.ShoppingCart, null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Zamów towar")
             }
@@ -160,17 +162,8 @@ fun DostawcaCard(dostawca: DostawcaItem, onZamowClick: () -> Unit) {
 @Composable
 fun DostawcaInfoRow(icon: ImageVector, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.outline
-        )
+        Icon(icon, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.outline)
         Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

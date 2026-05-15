@@ -2,6 +2,7 @@ package com.example.magazyn.api.interfaces
 
 import com.example.magazyn.api.dtos.HistoriaZamowieniaDTO
 import com.example.magazyn.api.dtos.NoweZamowienieRequest
+import com.example.magazyn.api.dtos.PozycjaZamowieniaDTO
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -33,4 +34,9 @@ interface ZamowieniaApi {
 
     @POST("api/zamowienia/klient")
     suspend fun zlozZamowienieKlient(@Body request: NoweZamowienieRequest): Response<Unit>
+
+    @GET("api/zamowienia/{id}/pozycje")
+    suspend fun getPozycjeZamowienia(
+        @Path("id") id: Int
+    ): List<PozycjaZamowieniaDTO>
 }

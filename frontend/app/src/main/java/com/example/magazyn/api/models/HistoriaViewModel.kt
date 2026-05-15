@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.magazyn.api.DataSyncManager
 import com.example.magazyn.api.RetrofitInstance
 import com.example.magazyn.api.dtos.HistoriaZamowieniaDTO
+import com.example.magazyn.api.dtos.PozycjaZamowieniaDTO
+import com.example.magazyn.api.interfaces.ZamowieniaApi
 import kotlinx.coroutines.launch
 
 class HistoriaViewModel : ViewModel() {
@@ -66,6 +68,23 @@ class HistoriaViewModel : ViewModel() {
             }
         }
 
+    }
+
+    var pozycjeList by mutableStateOf<List<PozycjaZamowieniaDTO>>(emptyList())
+
+    fun fetchPozycjeZamowienia(zamowienieId: Int) {
+        viewModelScope.launch {
+            var isLoading by mutableStateOf(false)
+            try {
+                val response = RetrofitInstance.zamowieniaApi.getPozycjeZamowienia(zamowienieId)
+                pozycjeList = response
+            } catch (e: Exception) {
+                errorMessage.value = "Błąd pobierania pozycji: ${e.message}"
+                Log.e("API_ERROR", "Błąd: ", e)
+            } finally {
+                isLoading = false
+            }
+        }
     }
 
 }

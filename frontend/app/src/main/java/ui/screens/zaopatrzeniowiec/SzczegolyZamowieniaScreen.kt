@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -36,8 +37,9 @@ import java.net.URL
 fun SzczegolyZamowieniaScreen(
     zamowienie: HistoriaZamowienia,
     onNavigateBack: () -> Unit,
+    onNavigateToItems: (Int) -> Unit,
     viewModel: HistoriaViewModel
-) {
+){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isDownloading by remember { mutableStateOf(false) }
@@ -72,8 +74,18 @@ fun SzczegolyZamowieniaScreen(
                     Text("Ilość produktów: ${zamowienie.sumaProduktow}", style = MaterialTheme.typography.bodyMedium)
                 }
             }
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = { onNavigateToItems(zamowienie.id) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+            ) {
+                Icon(Icons.Default.List, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Zobacz listę produktów")
+            }
 
             // --- PRZYCISK POBIERANIA PDF (Logika "Wszystko w jednym") ---
             OutlinedButton(
