@@ -1,9 +1,11 @@
 package magazyn.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -25,6 +27,10 @@ public class ZamowienieKlienta {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_magazyniera")
     private Uzytkownik magazynier;
+
+    @OneToMany(mappedBy = "zamowienie", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<ZamowienieProduktyKlienci> pozycje;
 
     @Column(nullable = false)
     private Integer status;
