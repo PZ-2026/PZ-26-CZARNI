@@ -67,4 +67,5 @@ class HistoriaViewModel : ViewModel() {
         }
 
     }
+
 }
