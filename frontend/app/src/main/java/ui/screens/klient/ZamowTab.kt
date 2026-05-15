@@ -151,6 +151,7 @@ fun ProduktItem(produkt: MagazynItemDTO, ilosc: Int, onIloscChange: (Int) -> Uni
 
             Column(horizontalAlignment = Alignment.End) {
                 Text("${String.format("%.2f", produkt.cena)} zł", fontWeight = FontWeight.Bold, color = Color(0xFF5D4037))
+                Text("${String.format("%.2f", produkt.cena * 1.23)} zł z VAT", color = Color.Gray, fontSize = 10.sp)
                 Text("Max: ${produkt.stanMagazynu!!.ilosc} ${produkt.jednostka}.", color = Color.Gray, fontSize = 10.sp)
 
                 Spacer(modifier = Modifier.height(8.dp))

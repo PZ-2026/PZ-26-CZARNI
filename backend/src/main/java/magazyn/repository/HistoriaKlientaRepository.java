@@ -15,7 +15,7 @@ public interface HistoriaKlientaRepository extends JpaRepository<ZamowienieKlien
             "'Magazyn Główny', " +
             "z.status, " +
             "SUM(l.ilosc), " +
-            "CAST(SUM(l.ilosc * l.cenaWDniuZakupu) AS float)) " +
+            "CAST(SUM(l.ilosc * l.cenaWDniuZakupu) * 1.23 AS float)) " +
             "FROM ZamowienieKlienta z " +
             "LEFT JOIN ZamowienieProduktyKlienci l ON l.zamowienie.id = z.id " +
             "WHERE z.klient.id = :idKlienta " +

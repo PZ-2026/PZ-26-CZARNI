@@ -40,7 +40,7 @@ class KlientViewModel : ViewModel() {
             val produkt = produkty.find {it.id == id }
             val cena = produkt?.cena ?: 0.0
             cena * ilosc
-        }
+        } * 1.23
     }
 
     var searchQuery by mutableStateOf("")
