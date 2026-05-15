@@ -9,9 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,8 +18,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.magazyn.api.ApiConnector
+import com.example.magazyn.api.dtos.*
 import com.example.magazyn.ui.theme.DeepBurgundy
 import com.example.magazyn.ui.theme.SoftPinkBG
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,7 +115,7 @@ fun AdminDashboard(onLogout: () -> Unit) {
             when (selectedItem.intValue) {
                 0 -> UsersTab()
                 1 -> FinanceTab()
-                2 -> ReportsTab()
+                2 -> DashboardTab()
                 3 -> SettingsTab()
             }
         }
@@ -168,37 +169,87 @@ fun AdminCard(
 
 @Composable
 fun UsersTab() {
-    val users = listOf(
-        "Sebastian Mikoś" to "Lider / Admin",
-        "Wojciech Koba" to "DevOps",
-        "Amadeusz Nowak" to "Backend",
-        "Michał Kalisiak" to "Backend",
-        "Kacper Kłósek" to "Frontend"
-    )
+    val users = remember { mutableStateOf<List<UzytkownikAdminDTO>?>(null) }
+    val isLoading = remember { mutableStateOf(true) }
+    val error = remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            try {
+                val result = ApiConnector.pobierzWszystkowUzytkownikow()
+                users.value = result
+                isLoading.value = false
+            } catch (e: Exception) {
+                error.value = e.message
+                isLoading.value = false
+            }
+        }
+    }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
         item { AdminSectionHeader("Użytkownicy", Icons.Default.People) }
-        items(users) { (name, role) ->
-            AdminCard(title = name) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = role, color = Color.Gray)
-                    Row {
-                        IconButton(onClick = {}) { Icon(Icons.Default.Edit, contentDescription = "Edytuj", tint = DeepBurgundy) }
-                        IconButton(onClick = {}) { Icon(Icons.Default.Block, contentDescription = "Blokuj", tint = Color.Red) }
+
+        if (isLoading.value) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = DeepBurgundy)
+                }
+            }
+        } else if (error.value != null) {
+            item {
+                AdminCard(title = "Błąd") {
+                    Text(error.value ?: "Nieznany błąd", color = Color.Red)
+                }
+            }
+        } else if (users.value != null) {
+            items(users.value!!) { user ->
+                AdminCard(title = "${user.imie} ${user.nazwisko}") {
+                    Column {
+                        Text(text = "Email: ${user.email}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                        Text(text = "Rola: ${getRoleName(user.rola)}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                        if (user.zablokowany) {
+                            Text(text = "⛔ Zablokowany", color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            IconButton(onClick = {}) { Icon(Icons.Default.Edit, contentDescription = "Edytuj", tint = DeepBurgundy) }
+                            IconButton(onClick = {
+                                scope.launch {
+                                    if (user.zablokowany) {
+                                        ApiConnector.odblokowakUzytkownika(user.id ?: 0)
+                                    } else {
+                                        ApiConnector.zablokowakUzytkownika(user.id ?: 0)
+                                    }
+                                    val result = ApiConnector.pobierzWszystkowUzytkownikow()
+                                    users.value = result
+                                }
+                            }) { 
+                                Icon(
+                                    if (user.zablokowany) Icons.Default.Lock else Icons.Default.Block, 
+                                    contentDescription = if (user.zablokowany) "Odblokuj" else "Blokuj", 
+                                    tint = Color.Red
+                                ) 
+                            }
+                        }
                     }
                 }
             }
         }
+
         item {
             Button(
                 onClick = {},
-                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -212,18 +263,48 @@ fun UsersTab() {
 
 @Composable
 fun FinanceTab() {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        AdminSectionHeader("Finanse", Icons.Default.Payments)
-        
-        AdminCard(title = "Podsumowanie okresu") {
-            FinanceRow("Przychody", "12 450.00 PLN", Color(0xFF4CAF50))
-            FinanceRow("Wydatki", "8 200.00 PLN", Color(0xFFF44336))
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
-            FinanceRow("Zysk netto", "4 250.00 PLN", DeepBurgundy)
+    val report = remember { mutableStateOf<RaportFinansowyDTO?>(null) }
+    val isLoading = remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            try {
+                val result = ApiConnector.pobierzRaportFinansowy(null, null)
+                report.value = result
+                isLoading.value = false
+            } catch (e: Exception) {
+                isLoading.value = false
+            }
+        }
+    }
+
+    LazyColumn(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
+        item { AdminSectionHeader("Finanse", Icons.Default.Payments) }
+
+        if (isLoading.value) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = DeepBurgundy)
+                }
+            }
+        } else if (report.value != null) {
+            item {
+                AdminCard(title = "Podsumowanie okresu") {
+                    FinanceRow("Przychody", "${report.value!!.sumaPrzychodow} PLN", Color(0xFF4CAF50))
+                    FinanceRow("Wydatki", "${report.value!!.sumaWydatkow} PLN", Color(0xFFF44336))
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    FinanceRow("Zysk netto", "${report.value!!.sumaZysku} PLN", DeepBurgundy)
+                }
+            }
         }
 
-        AdminCard(title = "Ostatnie transakcje") {
-            Text("Brak nowych transakcji do wyświetlenia.", style = MaterialTheme.typography.bodyMedium)
+        item {
+            AdminCard(title = "Ostatnie transakcje") {
+                Text("Pobieranie danych...", style = MaterialTheme.typography.bodyMedium)
+            }
         }
     }
 }
@@ -231,7 +312,9 @@ fun FinanceTab() {
 @Composable
 fun FinanceRow(label: String, value: String, color: Color) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
@@ -240,54 +323,113 @@ fun FinanceRow(label: String, value: String, color: Color) {
 }
 
 @Composable
-fun ReportsTab() {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        AdminSectionHeader("Raporty", Icons.Default.Assignment)
-        
-        ReportButton("Raport przychodów", "Zestawienie finansowe z wybranego okresu")
-        ReportButton("Raport stanu magazynu", "Aktualne ilości i historia zapasów")
-        ReportButton("Raport wydatków", "Analiza kosztów operacyjnych")
-    }
-}
+fun DashboardTab() {
+    val dashboard = remember { mutableStateOf<PanelAdminaDTO?>(null) }
+    val isLoading = remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
 
-@Composable
-fun ReportButton(title: String, description: String) {
-    AdminCard(title = title) {
-        Text(text = description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(
-            onClick = {},
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy.copy(alpha = 0.1f)),
-            contentPadding = PaddingValues(8.dp)
-        ) {
-            Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = DeepBurgundy)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Generuj PDF", color = DeepBurgundy)
+    LaunchedEffect(Unit) {
+        scope.launch {
+            try {
+                val result = ApiConnector.pobierzDanePanelu()
+                dashboard.value = result
+                isLoading.value = false
+            } catch (e: Exception) {
+                isLoading.value = false
+            }
+        }
+    }
+
+    LazyColumn(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
+        item { AdminSectionHeader("Panel Administratora", Icons.Default.Dashboard) }
+
+        if (isLoading.value) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = DeepBurgundy)
+                }
+            }
+        } else if (dashboard.value != null) {
+            val d = dashboard.value!!
+            items(listOf(
+                Triple("👥 Użytkownicy", d.liczbaUzytkownikow.toString(), DeepBurgundy),
+                Triple("📦 Produkty", d.liczbaProduktu.toString(), Color(0xFF2196F3)),
+                Triple("🏢 Magazyny", d.liczbaMagazynow.toString(), Color(0xFF4CAF50)),
+                Triple("🚚 Dostawcy", d.liczbaDostawow.toString(), Color(0xFFFFC107)),
+                Triple("💰 Przychody (m-c)", "${d.przychodyMiesiac} PLN", Color(0xFF4CAF50)),
+                Triple("💸 Wydatki (m-c)", "${d.wydatkiMiesiac} PLN", Color(0xFFF44336)),
+                Triple("💵 Zysk (m-c)", "${d.zyskMiesiac} PLN", DeepBurgundy),
+                Triple("⏳ Zamówienia w toku", d.liczbaZamowienWProgress.toString(), Color(0xFFFFC107)),
+                Triple("✅ Zamówienia do realizacji", d.liczbaZamowienDoRealizacji.toString(), Color(0xFF2196F3)),
+                Triple("⚠️ Produkty poniżej progu", d.liczbaProductowPonizejProgu.toString(), Color(0xFFF44336))
+            )) { (label, value, color) ->
+                AdminCard(title = label) {
+                    Text(text = value, style = MaterialTheme.typography.headlineSmall, color = color, fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 }
 
 @Composable
 fun SettingsTab() {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        AdminSectionHeader("Ustawienia", Icons.Default.Settings)
-        
-        AdminCard(title = "Progi alarmowe") {
-            Text("Minimalna ilość produktów przed powiadomieniem", style = MaterialTheme.typography.bodySmall)
-            Spacer(modifier = Modifier.height(16.dp))
-            Slider(value = 0.2f, onValueChange = {}, colors = SliderDefaults.colors(thumbColor = DeepBurgundy, activeTrackColor = DeepBurgundy))
-        }
+    val configs = remember { mutableStateOf<List<KonfiguracijaDTO>?>(null) }
+    val isLoading = remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
 
-        AdminCard(title = "Wygląd") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Tryb ciemny")
-                Switch(checked = false, onCheckedChange = {}, colors = SwitchDefaults.colors(checkedThumbColor = DeepBurgundy))
+    LaunchedEffect(Unit) {
+        scope.launch {
+            try {
+                val result = ApiConnector.pobierzWszystkoKonfiguracje()
+                configs.value = result
+                isLoading.value = false
+            } catch (e: Exception) {
+                isLoading.value = false
+            }
+        }
+    }
+
+    LazyColumn(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
+        item { AdminSectionHeader("Ustawienia", Icons.Default.Settings) }
+
+        if (isLoading.value) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = DeepBurgundy)
+                }
+            }
+        } else if (configs.value != null) {
+            items(configs.value!!) { config ->
+                AdminCard(title = config.nazwaParametru) {
+                    Column {
+                        Text(text = config.opis, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        Text(text = "Wartość: ${config.wartoscParametru}", style = MaterialTheme.typography.bodyMedium)
+                        Text(text = "Typ: ${config.typParametru}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        if (config.aktywna) {
+                            Text(text = "✓ Aktywna", color = Color(0xFF4CAF50), style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+        } else {
+            item {
+                Text("Brak konfiguracji", modifier = Modifier.padding(16.dp))
             }
         }
     }
 }
+
+fun getRoleName(roleId: Int): String {
+    return when (roleId) {
+        1 -> "Administrator"
+        2 -> "Magazynier"
+        3 -> "Zaopatrzeniowiec"
+        4 -> "Klient"
+        else -> "Nieznana rola"
+    }
+}
+

@@ -48,4 +48,8 @@ object RetrofitInstance {
     val magazynApi: MagazynApi by lazy {
         retrofit.create(MagazynApi::class.java)
     }
+
+    val adminApi: AdminApi by lazy {
+        retrofit.create(AdminApi::class.java)
+    }
 }
