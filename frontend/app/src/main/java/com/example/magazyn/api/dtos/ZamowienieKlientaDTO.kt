@@ -12,6 +12,7 @@ data class ZamowienieKlientaDTO(
         val produktId: Int,
         val nazwaProduktu: String,
         val ilosc: Int,
-        val kodKreskowy: String
+        val kodKreskowy: String,
+        val strefa: String?
     )
 }

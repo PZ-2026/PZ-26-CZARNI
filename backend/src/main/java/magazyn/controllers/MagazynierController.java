@@ -44,7 +44,8 @@ public class MagazynierController {
                         p.getProdukt().getId(),
                         p.getProdukt().getNazwaProduktu(),
                         p.getIlosc(),
-                        p.getProdukt().getKodKreskowy()
+                        p.getProdukt().getKodKreskowy(),
+                        p.getProdukt().getStrefa()
                 )).collect(Collectors.toList());
 
         return new ZamowienieKlientaDTO(

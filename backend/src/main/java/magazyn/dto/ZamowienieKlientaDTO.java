@@ -29,5 +29,6 @@ public class ZamowienieKlientaDTO {
         private String nazwaProduktu;
         private Integer ilosc;
         private String kodKreskowy;
+        private String strefa;
     }
 }
