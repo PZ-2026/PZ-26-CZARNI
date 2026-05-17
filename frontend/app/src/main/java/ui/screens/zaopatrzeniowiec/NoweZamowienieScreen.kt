@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -21,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.magazyn.api.models.NoweZamowienieViewModel
 import com.example.magazyn.data.api.dtos.ProduktDTO
 import androidx.compose.foundation.text.BasicTextField
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoweZamowienieScreen(
@@ -39,28 +39,22 @@ fun NoweZamowienieScreen(
             viewModel.wyczyscStan()
         }
     }
+
     val produkty by viewModel.produkty
     val koszyk = viewModel.koszyk
     val isLoading by viewModel.isLoading
     val isSubmitting by viewModel.isSubmitting
     val successMessage by viewModel.successMessage
 
-    // --- STANY DLA FILTRÓW I SORTOWANIA ---
+    // --- STAN DLA WYSZUKIWARKI ---
     var searchQuery by remember { mutableStateOf("") }
-    var sortAscending by remember { mutableStateOf<Boolean?>(null) } // true = najtańsze, false = najdroższe
 
-    // Przetwarzanie listy w czasie rzeczywistym
-    val processedProdukty = remember(produkty, searchQuery, sortAscending) {
-        val filtered = if (searchQuery.isNotBlank()) {
+    // Przetwarzanie listy w czasie rzeczywistym (tylko wyszukiwanie)
+    val processedProdukty = remember(produkty, searchQuery) {
+        if (searchQuery.isNotBlank()) {
             produkty.filter { it.nazwaProduktu.contains(searchQuery, ignoreCase = true) }
         } else {
             produkty
-        }
-
-        when (sortAscending) {
-            true -> filtered.sortedBy { it.cena }
-            false -> filtered.sortedByDescending { it.cena }
-            else -> filtered
         }
     }
 
@@ -155,7 +149,7 @@ fun NoweZamowienieScreen(
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
 
-                    // --- SEKCJA WYSZUKIWARKI I SORTOWANIA ---
+                    // --- SEKCJA WYSZUKIWARKI ---
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                         OutlinedTextField(
                             value = searchQuery,
@@ -177,42 +171,12 @@ fun NoweZamowienieScreen(
                                 unfocusedContainerColor = MaterialTheme.colorScheme.surface
                             )
                         )
-
                         Spacer(modifier = Modifier.height(8.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            Text("Cena: ", style = MaterialTheme.typography.labelMedium)
-                            IconButton(onClick = { sortAscending = true }) {
-                                Icon(
-                                    Icons.Default.ArrowUpward,
-                                    contentDescription = "Najtańsze",
-                                    tint = if (sortAscending == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                                )
-                            }
-                            IconButton(onClick = { sortAscending = false }) {
-                                Icon(
-                                    Icons.Default.ArrowDownward,
-                                    contentDescription = "Najdroższe",
-                                    tint = if (sortAscending == false) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                                )
-                            }
-                            IconButton(onClick = { sortAscending = null }) {
-                                Icon(
-                                    Icons.Default.Clear,
-                                    contentDescription = "Reset",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
                     }
-                    // --- KONIEC SEKCJI FILTRÓW ---
+                    // --- KONIEC SEKCJI WYSZUKIWARKI ---
 
                     LazyColumn(
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp), // Zwiększony dolny padding, żeby przycisk "Zamów" nie zasłaniał ostatniego elementu
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(processedProdukty, key = { it.id }) { produkt ->
@@ -235,7 +199,6 @@ fun ProduktZamowienieKarta(
     ilosc: Int,
     onIloscZmieniona: (Int) -> Unit
 ) {
-    // Lokalny stan potrzebny dla płynnego wpisywania z klawiatury (żeby kursor nie skakał)
     var textValue by remember(ilosc) { mutableStateOf(if (ilosc == 0) "" else ilosc.toString()) }
 
     ElevatedCard(
@@ -253,24 +216,20 @@ fun ProduktZamowienieKarta(
             Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 Text(produkt.nazwaProduktu, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text("Kod: ${produkt.kodKreskowy}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-                Text("${String.format("%.2f", produkt.cena)} PLN", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
             }
 
-            // Stepper (+ / - / Klawiatura)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Przycisk MINUS (zmniejszony)
                 IconButton(
                     onClick = { onIloscZmieniona(ilosc - 1) },
                     enabled = ilosc > 0,
                     colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                    modifier = Modifier.size(32.dp) // Zmniejszony z domyślnego 48.dp
+                    modifier = Modifier.size(32.dp)
                 ) {
                     Icon(Icons.Default.Remove, contentDescription = "Mniej", modifier = Modifier.size(16.dp))
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Zgrabne, w pełni kontrolowane pole tekstowe
                 BasicTextField(
                     value = textValue,
                     onValueChange = { newValue ->
@@ -285,20 +244,19 @@ fun ProduktZamowienieKarta(
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Bold,
                         fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                        color = MaterialTheme.colorScheme.onSurface // Kolor tekstu
+                        color = MaterialTheme.colorScheme.onSurface
                     ),
                     modifier = Modifier
-                        .width(40.dp) // Idealna szerokość dla 3 cyfr
+                        .width(40.dp)
                         .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), // Lekkie tło, żeby wyglądało jak pole
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             shape = RoundedCornerShape(8.dp)
                         )
-                        .padding(vertical = 4.dp) // Minimalny margines góra-dół
+                        .padding(vertical = 4.dp)
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Przycisk PLUS (zmniejszony)
                 IconButton(
                     onClick = { onIloscZmieniona(ilosc + 1) },
                     colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),

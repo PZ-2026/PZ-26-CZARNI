@@ -1,5 +1,6 @@
 package magazyn.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,6 +17,7 @@ public class ZamowienieProduktyKlienci {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("idZamowienia")
+    @JsonBackReference
     @JoinColumn(name = "id_zamowienia")
     private ZamowienieKlienta zamowienie;
 
