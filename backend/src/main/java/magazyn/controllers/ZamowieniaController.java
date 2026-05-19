@@ -3,6 +3,7 @@ package magazyn.controllers;
 import jakarta.transaction.Transactional;
 import magazyn.dto.HistoriaZamowieniaDTO;
 import magazyn.dto.NoweZamowienieRequest;
+import magazyn.dto.PozycjaZamowieniaResponse;
 import magazyn.entity.StanMagazynu;
 import magazyn.entity.ZamowienieProduktyDostawcy;
 import magazyn.entity.ZamowienieZaopatrzeniowca;
@@ -11,6 +12,7 @@ import magazyn.repository.StanMagazynuRepository;
 import magazyn.repository.ZamowieniaZaopatrzeniowiecRepository;
 import magazyn.repository.ZamowienieProduktyDostawcyRepository;
 import magazyn.service.ZamowienieKlientService;
+import magazyn.service.ZamowienieService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +40,9 @@ public class ZamowieniaController {
 
     @Autowired
     private ZamowienieKlientService zamowienieKlientService;
+
+    @Autowired
+    private ZamowienieService zamowienieService;
 
     @GetMapping("/historia/{uzytkownikId}")
     public List<HistoriaZamowieniaDTO> getHistoria(@PathVariable("uzytkownikId") Integer uzytkownikId) {
@@ -99,5 +104,10 @@ public class ZamowieniaController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Błąd serwera"); // Error 500
         }
+    }
+
+    @GetMapping("/{id}/pozycje")
+    public ResponseEntity<List<PozycjaZamowieniaResponse>> getPozycje(@PathVariable Integer id) {
+        return ResponseEntity.ok(zamowienieService.getPozycjeDlaZamowienia(id));
     }
 }
