@@ -1,11 +1,15 @@
 package ui.screens.admin
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,21 +19,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.magazyn.api.ApiConnector
 import com.example.magazyn.api.dtos.*
 import com.example.magazyn.ui.theme.DeepBurgundy
 import com.example.magazyn.ui.theme.SoftPinkBG
+import com.example.magazyn.utils.AppSettings
+import com.example.magazyn.utils.RoleConstants
+import com.example.magazyn.utils.getRolaName
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminDashboard(onLogout: () -> Unit) {
+fun AdminDashboard(
+    onLogout: () -> Unit,
+    darkTheme: Boolean,
+    onDarkModeChange: (Boolean) -> Unit
+) {
     val selectedItem = remember { mutableIntStateOf(0) }
     val items = listOf(
         AdminBottomNavItem.Uzytkownicy,
+        AdminBottomNavItem.Dostawcy,
+        AdminBottomNavItem.Magazyn,
         AdminBottomNavItem.Finanse,
         AdminBottomNavItem.Raporty,
         AdminBottomNavItem.Ustawienia,
@@ -114,11 +129,575 @@ fun AdminDashboard(onLogout: () -> Unit) {
         Box(modifier = Modifier.padding(padding)) {
             when (selectedItem.intValue) {
                 0 -> UsersTab()
-                1 -> FinanceTab()
-                2 -> DashboardTab()
-                3 -> SettingsTab()
+                1 -> DostawcyTab()
+                2 -> MagazynTab()
+                3 -> FinanceTab()
+                4 -> DashboardTab()
+                5 -> SettingsTab(
+                    darkTheme = darkTheme,
+                    onDarkModeChange = onDarkModeChange
+                )
             }
         }
+    }
+}
+
+@Composable
+fun UsersTab() {
+    val users = remember { mutableStateOf<List<UzytkownikAdminDTO>?>(null) }
+    val isLoading = remember { mutableStateOf(true) }
+    val error = remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    var showUserDialog by remember { mutableStateOf(false) }
+    var userToEdit by remember { mutableStateOf<UzytkownikAdminDTO?>(null) }
+    var showOrdersDialog by remember { mutableStateOf(false) }
+    var ordersForUser by remember { mutableStateOf<UzytkownikAdminDTO?>(null) }
+
+    fun refreshUsers() {
+        scope.launch {
+            isLoading.value = true
+            error.value = null
+            try {
+                val result = ApiConnector.pobierzWszystkowUzytkownikow()
+                users.value = result
+                isLoading.value = false
+            } catch (e: Exception) {
+                error.value = e.message
+                isLoading.value = false
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        refreshUsers()
+    }
+
+    if (showUserDialog) {
+        UserDialog(
+            user = userToEdit,
+            onDismiss = {
+                showUserDialog = false
+                userToEdit = null
+            },
+            onConfirm = {
+                showUserDialog = false
+                userToEdit = null
+                refreshUsers()
+            }
+        )
+    }
+
+    if (showOrdersDialog && ordersForUser != null) {
+        OrdersDialog(
+            user = ordersForUser!!,
+            onDismiss = { showOrdersDialog = false; ordersForUser = null }
+        )
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AdminSectionHeader("Użytkownicy", Icons.Default.People)
+                Spacer(modifier = Modifier.weight(1f))
+                IconButton(onClick = { refreshUsers() }) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Odśwież", tint = DeepBurgundy)
+                }
+            }
+        }
+
+        if (isLoading.value) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = DeepBurgundy)
+                }
+            }
+        } else if (error.value != null) {
+            item {
+                AdminCard(title = "Błąd") {
+                    Text(error.value ?: "Nieznany błąd", color = Color.Red)
+                    Button(onClick = { refreshUsers() }) { Text("Ponów") }
+                }
+            }
+        } else if (users.value != null) {
+            items(users.value!!) { user ->
+                AdminCard(title = "${user.imie} ${user.nazwisko}") {
+                    Column {
+                        Text(text = "Email: ${user.email}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                        Text(text = "Telefon: ${user.telefon ?: "Brak"}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                        Text(text = "Rola: ${getRolaName(user.rola)}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                        if (user.zablokowany) {
+                            Text(text = "⛔ Zablokowany", color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            IconButton(onClick = {
+                                ordersForUser = user
+                                showOrdersDialog = true
+                            }) { Icon(Icons.Default.ListAlt, contentDescription = "Zamówienia", tint = DeepBurgundy) }
+                            IconButton(onClick = {
+                                userToEdit = user
+                                showUserDialog = true
+                            }) { Icon(Icons.Default.Edit, contentDescription = "Edytuj", tint = DeepBurgundy) }
+
+                            IconButton(onClick = {
+                                scope.launch {
+                                    val success = if (user.zablokowany) {
+                                        ApiConnector.odblokowakUzytkownika(user.id ?: 0)
+                                    } else {
+                                        ApiConnector.zablokowakUzytkownika(user.id ?: 0)
+                                    }
+                                    if (success) refreshUsers()
+                                    else Toast.makeText(context, "Błąd zmiany statusu", Toast.LENGTH_SHORT).show()
+                                }
+                            }) {
+                                Icon(
+                                    if (user.zablokowany) Icons.Default.LockOpen else Icons.Default.Block,
+                                    contentDescription = if (user.zablokowany) "Odblokuj" else "Zablokuj",
+                                    tint = if (user.zablokowany) Color.Green else Color.Red
+                                )
+                            }
+
+                            IconButton(onClick = {
+                                scope.launch {
+                                    if (ApiConnector.usunUzytkownika(user.id ?: 0)) {
+                                        refreshUsers()
+                                        Toast.makeText(context, "Użytkownik usunięty", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "Błąd usuwania", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }) { Icon(Icons.Default.Delete, contentDescription = "Usuń", tint = Color.Red) }
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Button(
+                onClick = {
+                    userToEdit = null
+                    showUserDialog = true
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Dodaj użytkownika")
+            }
+        }
+    }
+}
+
+@Composable
+fun UserDialog(
+    user: UzytkownikAdminDTO?,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val context = LocalContext.current
+    var imie by remember { mutableStateOf(user?.imie ?: "") }
+    var nazwisko by remember { mutableStateOf(user?.nazwisko ?: "") }
+    var email by remember { mutableStateOf(user?.email ?: "") }
+    var telefon by remember { mutableStateOf(user?.telefon ?: "") }
+    var firma by remember { mutableStateOf(user?.firma ?: "") }
+    var nip by remember { mutableStateOf(user?.nip ?: "") }
+    var haslo by remember { mutableStateOf("") }
+    var zablokowany by remember { mutableStateOf(user?.zablokowany ?: false) }
+    var rola by remember { mutableIntStateOf(user?.rola ?: RoleConstants.KLIENT) }
+
+    var telefonError by remember { mutableStateOf<String?>(null) }
+    var nipError by remember { mutableStateOf<String?>(null) }
+
+    val scope = rememberCoroutineScope()
+    val isEditing = user != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (isEditing) "Edytuj użytkownika" else "Dodaj użytkownika") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                OutlinedTextField(value = imie, onValueChange = { imie = it }, label = { Text("Imię") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = nazwisko, onValueChange = { nazwisko = it }, label = { Text("Nazwisko") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = telefon,
+                    onValueChange = {
+                        telefon = it
+                        if (it.isNotBlank()) {
+                            val digits = it.filter { c -> c.isDigit() }
+                            telefonError = if (digits.length != 10) "Telefon powinien mieć dokładnie 10 cyfr (wpisano: ${digits.length})" else null
+                        } else telefonError = null
+                    },
+                    label = { Text("Telefon") },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = telefonError != null
+                )
+                if (telefonError != null) Text(telefonError ?: "", color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                OutlinedTextField(value = firma, onValueChange = { firma = it }, label = { Text("Firma") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = nip,
+                    onValueChange = {
+                        nip = it
+                        if (it.isNotBlank()) {
+                            val digits = it.filter { c -> c.isDigit() }
+                            nipError = if (digits.length != 10) "NIP powinien mieć dokładnie 10 cyfr (wpisano: ${digits.length})" else null
+                        } else nipError = null
+                    },
+                    label = { Text("NIP") },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = nipError != null
+                )
+                if (nipError != null) Text(nipError ?: "", color = Color.Red, style = MaterialTheme.typography.bodySmall)
+
+                OutlinedTextField(
+                    value = haslo,
+                    onValueChange = { haslo = it },
+                    label = { Text(if (isEditing) "Nowe hasło (zostaw puste by nie zmieniać)" else "Hasło (wymagane)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = PasswordVisualTransformation()
+                )
+
+                if (isEditing) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                        Checkbox(checked = zablokowany, onCheckedChange = { zablokowany = it })
+                        Text("Konto zablokowane")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Rola:", fontWeight = FontWeight.Bold)
+
+                Column {
+                    RolaOption("Administrator", rola == RoleConstants.ADMINISTRATOR) { rola = RoleConstants.ADMINISTRATOR }
+                    RolaOption("Magazynier", rola == RoleConstants.MAGAZYNIER) { rola = RoleConstants.MAGAZYNIER }
+                    RolaOption("Zaopatrzeniowiec", rola == RoleConstants.ZAOPATRZENIOWIEC) { rola = RoleConstants.ZAOPATRZENIOWIEC }
+                    RolaOption("Klient", rola == RoleConstants.KLIENT) { rola = RoleConstants.KLIENT }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                // walidacja
+                if (!isEditing && haslo.isBlank()) {
+                    Toast.makeText(context, "Hasło jest wymagane!", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+                if (telefonError != null || nipError != null) {
+                    Toast.makeText(context, "Proszę poprawić błędy w formularzu", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                scope.launch {
+                    val dto = UzytkownikAdminDTO(
+                        id = user?.id,
+                        imie = imie.trim(),
+                        nazwisko = nazwisko.trim(),
+                        email = email.trim(),
+                        telefon = telefon.trim().ifBlank { null },
+                        firma = firma.trim().ifBlank { null },
+                        nip = nip.trim().ifBlank { null },
+                        rola = rola,
+                        zablokowany = zablokowany,
+                        haslo = if (haslo.isNotBlank()) haslo.trim() else null
+                    )
+
+                    val result = if (isEditing) {
+                        val updates = mutableMapOf<String, Any?>(
+                            "imie" to imie.trim(),
+                            "nazwisko" to nazwisko.trim(),
+                            "email" to email.trim(),
+                            "telefon" to telefon.trim().ifBlank { null },
+                            "firma" to firma.trim().ifBlank { null },
+                            "nip" to nip.trim().ifBlank { null },
+                            "rola" to rola,
+                            "zablokowany" to zablokowany
+                        )
+                        if (haslo.isNotBlank()) {
+                            updates["haslo"] = haslo.trim()
+                        }
+                        ApiConnector.edytujUzytkownika(user!!.id ?: 0, updates)
+                    } else {
+                        ApiConnector.utworzUzytkownika(dto)
+                    }
+
+                    if (result.first != null) {
+                        Toast.makeText(context, "Zapisano pomyślnie", Toast.LENGTH_SHORT).show()
+                        onConfirm()
+                    } else {
+                        Toast.makeText(context, "Błąd serwera: ${result.second}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }, colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)) {
+                Text("Zapisz")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Anuluj") }
+        }
+    )
+}
+
+@Composable
+fun DostawcyTab() {
+    val dostawcy = remember { mutableStateOf<List<DostawcaDTO>?>(null) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var showDialog by remember { mutableStateOf(false) }
+    var dostawcaToEdit by remember { mutableStateOf<DostawcaDTO?>(null) }
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            dostawcy.value = ApiConnector.pobierzWszystkichDostawcow()
+        }
+    }
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .verticalScroll(rememberScrollState())
+        .padding(16.dp)) {
+        AdminSectionHeader("Zarządzanie Dostawcami", Icons.Default.LocalShipping)
+
+        dostawcy.value?.let { lista ->
+            lista.forEach { dostawca ->
+                Card(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp), shape = RoundedCornerShape(12.dp)) {
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(dostawca.nazwa, fontWeight = FontWeight.Bold)
+                            Text(dostawca.adres, style = MaterialTheme.typography.bodySmall)
+                            Text(dostawca.telefon, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        }
+                        IconButton(onClick = {
+                            dostawcaToEdit = dostawca
+                            showDialog = true
+                        }) { Icon(Icons.Default.Edit, contentDescription = "Edytuj", tint = DeepBurgundy) }
+                        IconButton(onClick = {
+                            scope.launch {
+                                if (ApiConnector.usunDostawce(dostawca.id ?: 0)) {
+                                    dostawcy.value = ApiConnector.pobierzWszystkichDostawcow()
+                                    Toast.makeText(context, "Dostawca usunięty", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }) { Icon(Icons.Default.Delete, contentDescription = "Usuń", tint = Color.Red) }
+                    }
+                }
+            }
+        }
+
+        Button(onClick = {
+            dostawcaToEdit = null
+            showDialog = true
+        }, modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)) {
+            Text("Dodaj dostawcę")
+        }
+    }
+
+    if (showDialog) {
+        DostawcaDialog(
+            dostawca = dostawcaToEdit,
+            onDismiss = { showDialog = false },
+            onConfirm = {
+                scope.launch {
+                    dostawcy.value = ApiConnector.pobierzWszystkichDostawcow()
+                    showDialog = false
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun MagazynTab() {
+    val stan = remember { mutableStateOf<List<StanMagazynuDTO>?>(null) }
+    val scope = rememberCoroutineScope()
+    var showDialog by remember { mutableStateOf(false) }
+    var stanToEdit by remember { mutableStateOf<StanMagazynuDTO?>(null) }
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            stan.value = ApiConnector.pobierzCalyStanMagazynu()
+        }
+    }
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .verticalScroll(rememberScrollState())
+        .padding(16.dp)) {
+        AdminSectionHeader("Stan Magazynu", Icons.Default.Warehouse)
+
+        stan.value?.let { lista ->
+            lista.forEach { produkt ->
+                Card(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp), shape = RoundedCornerShape(12.dp)) {
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            // Używamy bezpiecznego pola ID zamiast nieistniejącego nazwa
+                            Text("Produkt ID: ${produkt.id ?: "Nieznany"}", fontWeight = FontWeight.Bold)
+                            Text("Ilość: ${produkt.ilosc}", style = MaterialTheme.typography.bodySmall)
+
+                            // Zakomentowane do momentu aktualizacji StanMagazynuDTO o pole cena
+                            /*
+                            if (produkt.cena != null) {
+                                Text("Cena: ${produkt.cena}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            }
+                            */
+                        }
+                        IconButton(onClick = {
+                            stanToEdit = produkt
+                            showDialog = true
+                        }) { Icon(Icons.Default.Edit, contentDescription = "Edytuj", tint = DeepBurgundy) }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showDialog && stanToEdit != null) {
+        MagazynDialog(
+            stan = stanToEdit,
+            onDismiss = { showDialog = false },
+            onConfirm = {
+                scope.launch {
+                    stan.value = ApiConnector.pobierzCalyStanMagazynu()
+                    showDialog = false
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun DostawcaDialog(
+    dostawca: DostawcaDTO?,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val context = LocalContext.current
+    var nazwa by remember { mutableStateOf(dostawca?.nazwa ?: "") }
+    var adres by remember { mutableStateOf(dostawca?.adres ?: "") }
+    var telefon by remember { mutableStateOf(dostawca?.telefon ?: "") }
+    val scope = rememberCoroutineScope()
+    val isEditing = dostawca != null
+    var telefonError by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (isEditing) "Edytuj dostawcę" else "Dodaj dostawcę") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                OutlinedTextField(value = nazwa, onValueChange = { nazwa = it }, label = { Text("Nazwa") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = adres, onValueChange = { adres = it }, label = { Text("Adres") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = telefon, onValueChange = { telefon = it }, label = { Text("Telefon") }, modifier = Modifier.fillMaxWidth(), isError = telefonError != null)
+                if (telefonError != null) Text(telefonError ?: "", color = Color.Red, style = MaterialTheme.typography.bodySmall)
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                if (telefonError != null) {
+                    Toast.makeText(context, "Proszę poprawić błędy w formularzu", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+                scope.launch {
+                    // Wymuszenie Int w id zamiast Int? aby naprawić błąd argument mismatch
+                    val dto = DostawcaDTO(id = dostawca?.id ?: 0, nazwa = nazwa, adres = adres, telefon = telefon)
+                    val result = if (isEditing) {
+                        ApiConnector.edytujDostawce(dostawca?.id ?: 0, dto)
+                    } else {
+                        ApiConnector.utworzDostawce(dto)
+                    }
+                    if (result.first != null) {
+                        Toast.makeText(context, "Zapisano", Toast.LENGTH_SHORT).show()
+                        onConfirm()
+                    } else {
+                        Toast.makeText(context, "Błąd: ${result.second}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }, colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)) {
+                Text("Zapisz")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Anuluj") }
+        }
+    )
+}
+
+@Composable
+fun MagazynDialog(
+    stan: StanMagazynuDTO?,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val context = LocalContext.current
+    var ilosc by remember { mutableStateOf(stan?.ilosc?.toString() ?: "") }
+    val scope = rememberCoroutineScope()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        // Zmieniono na produkt.id dla bezpieczeństwa kompilacji
+        title = { Text("Edytuj ilość - ID: ${stan?.id ?: "Nieznany"}") },
+        text = {
+            Column {
+                OutlinedTextField(value = ilosc, onValueChange = { ilosc = it }, label = { Text("Ilość") }, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                scope.launch {
+                    val parsedIlosc = ilosc.toIntOrNull() ?: 0
+                    val dto = stan?.copy(ilosc = parsedIlosc)
+
+                    if (dto != null) {
+                        val result = ApiConnector.edytujStanMagazynu(dto.id ?: 0, dto)
+                        if (result.first != null) {
+                            Toast.makeText(context, "Zapisano", Toast.LENGTH_SHORT).show()
+                            onConfirm()
+                        } else {
+                            Toast.makeText(context, "Błąd: ${result.second}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }, colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)) {
+                Text("Zapisz")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Anuluj") }
+        }
+    )
+}
+
+@Composable
+fun RolaOption(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Text(text = label, modifier = Modifier.padding(start = 8.dp))
     }
 }
 
@@ -168,100 +747,6 @@ fun AdminCard(
 }
 
 @Composable
-fun UsersTab() {
-    val users = remember { mutableStateOf<List<UzytkownikAdminDTO>?>(null) }
-    val isLoading = remember { mutableStateOf(true) }
-    val error = remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            try {
-                val result = ApiConnector.pobierzWszystkowUzytkownikow()
-                users.value = result
-                isLoading.value = false
-            } catch (e: Exception) {
-                error.value = e.message
-                isLoading.value = false
-            }
-        }
-    }
-
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        item { AdminSectionHeader("Użytkownicy", Icons.Default.People) }
-
-        if (isLoading.value) {
-            item {
-                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = DeepBurgundy)
-                }
-            }
-        } else if (error.value != null) {
-            item {
-                AdminCard(title = "Błąd") {
-                    Text(error.value ?: "Nieznany błąd", color = Color.Red)
-                }
-            }
-        } else if (users.value != null) {
-            items(users.value!!) { user ->
-                AdminCard(title = "${user.imie} ${user.nazwisko}") {
-                    Column {
-                        Text(text = "Email: ${user.email}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-                        Text(text = "Rola: ${getRoleName(user.rola)}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-                        if (user.zablokowany) {
-                            Text(text = "⛔ Zablokowany", color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            IconButton(onClick = {}) { Icon(Icons.Default.Edit, contentDescription = "Edytuj", tint = DeepBurgundy) }
-                            IconButton(onClick = {
-                                scope.launch {
-                                    if (user.zablokowany) {
-                                        ApiConnector.odblokowakUzytkownika(user.id ?: 0)
-                                    } else {
-                                        ApiConnector.zablokowakUzytkownika(user.id ?: 0)
-                                    }
-                                    val result = ApiConnector.pobierzWszystkowUzytkownikow()
-                                    users.value = result
-                                }
-                            }) { 
-                                Icon(
-                                    if (user.zablokowany) Icons.Default.Lock else Icons.Default.Block, 
-                                    contentDescription = if (user.zablokowany) "Odblokuj" else "Blokuj", 
-                                    tint = Color.Red
-                                ) 
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        item {
-            Button(
-                onClick = {},
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Dodaj użytkownika")
-            }
-        }
-    }
-}
-
-@Composable
 fun FinanceTab() {
     val report = remember { mutableStateOf<RaportFinansowyDTO?>(null) }
     val isLoading = remember { mutableStateOf(true) }
@@ -279,9 +764,7 @@ fun FinanceTab() {
         }
     }
 
-    LazyColumn(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         item { AdminSectionHeader("Finanse", Icons.Default.Payments) }
 
         if (isLoading.value) {
@@ -295,15 +778,9 @@ fun FinanceTab() {
                 AdminCard(title = "Podsumowanie okresu") {
                     FinanceRow("Przychody", "${report.value!!.sumaPrzychodow} PLN", Color(0xFF4CAF50))
                     FinanceRow("Wydatki", "${report.value!!.sumaWydatkow} PLN", Color(0xFFF44336))
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     FinanceRow("Zysk netto", "${report.value!!.sumaZysku} PLN", DeepBurgundy)
                 }
-            }
-        }
-
-        item {
-            AdminCard(title = "Ostatnie transakcje") {
-                Text("Pobieranie danych...", style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
@@ -312,9 +789,7 @@ fun FinanceTab() {
 @Composable
 fun FinanceRow(label: String, value: String, color: Color) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
@@ -340,10 +815,8 @@ fun DashboardTab() {
         }
     }
 
-    LazyColumn(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
-        item { AdminSectionHeader("Panel Administratora", Icons.Default.Dashboard) }
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        item { AdminSectionHeader("Raporty", Icons.Default.Analytics) }
 
         if (isLoading.value) {
             item {
@@ -357,12 +830,7 @@ fun DashboardTab() {
                 Triple("👥 Użytkownicy", d.liczbaUzytkownikow.toString(), DeepBurgundy),
                 Triple("📦 Produkty", d.liczbaProduktu.toString(), Color(0xFF2196F3)),
                 Triple("🏢 Magazyny", d.liczbaMagazynow.toString(), Color(0xFF4CAF50)),
-                Triple("🚚 Dostawcy", d.liczbaDostawow.toString(), Color(0xFFFFC107)),
-                Triple("💰 Przychody (m-c)", "${d.przychodyMiesiac} PLN", Color(0xFF4CAF50)),
-                Triple("💸 Wydatki (m-c)", "${d.wydatkiMiesiac} PLN", Color(0xFFF44336)),
-                Triple("💵 Zysk (m-c)", "${d.zyskMiesiac} PLN", DeepBurgundy),
                 Triple("⏳ Zamówienia w toku", d.liczbaZamowienWProgress.toString(), Color(0xFFFFC107)),
-                Triple("✅ Zamówienia do realizacji", d.liczbaZamowienDoRealizacji.toString(), Color(0xFF2196F3)),
                 Triple("⚠️ Produkty poniżej progu", d.liczbaProductowPonizejProgu.toString(), Color(0xFFF44336))
             )) { (label, value, color) ->
                 AdminCard(title = label) {
@@ -374,27 +842,59 @@ fun DashboardTab() {
 }
 
 @Composable
-fun SettingsTab() {
+fun SettingsTab(
+    darkTheme: Boolean,
+    onDarkModeChange: (Boolean) -> Unit
+) {
+    val context = LocalContext.current
     val configs = remember { mutableStateOf<List<KonfiguracijaDTO>?>(null) }
     val isLoading = remember { mutableStateOf(true) }
+    val darkMode = remember { mutableStateOf(darkTheme) }
     val scope = rememberCoroutineScope()
+    var showConfigDialog by remember { mutableStateOf(false) }
+    var configToEdit by remember { mutableStateOf<KonfiguracijaDTO?>(null) }
 
-    LaunchedEffect(Unit) {
+    fun refreshConfigs() {
         scope.launch {
-            try {
-                val result = ApiConnector.pobierzWszystkoKonfiguracje()
-                configs.value = result
-                isLoading.value = false
-            } catch (e: Exception) {
-                isLoading.value = false
-            }
+            isLoading.value = true
+            val result = ApiConnector.pobierzWszystkoKonfiguracje()
+            configs.value = result
+            isLoading.value = false
         }
     }
 
-    LazyColumn(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
+    LaunchedEffect(Unit) {
+        refreshConfigs()
+    }
+
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         item { AdminSectionHeader("Ustawienia", Icons.Default.Settings) }
+
+        item {
+            AdminCard(title = "Preferencje aplikacji") {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Tryb ciemny", style = MaterialTheme.typography.bodyLarge)
+                            Text("Włącz lub wyłącz ciemny motyw.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        }
+                        Switch(
+                            checked = darkMode.value,
+                            onCheckedChange = {
+                                darkMode.value = it
+                                AppSettings.setDarkMode(context, it)
+                                onDarkModeChange(it)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        item { AdminSectionHeader("Konfiguracja systemu", Icons.Default.Tune) }
 
         if (isLoading.value) {
             item {
@@ -402,34 +902,194 @@ fun SettingsTab() {
                     CircularProgressIndicator(color = DeepBurgundy)
                 }
             }
-        } else if (configs.value != null) {
-            items(configs.value!!) { config ->
-                AdminCard(title = config.nazwaParametru) {
-                    Column {
-                        Text(text = config.opis, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                        Text(text = "Wartość: ${config.wartoscParametru}", style = MaterialTheme.typography.bodyMedium)
-                        Text(text = "Typ: ${config.typParametru}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                        if (config.aktywna) {
-                            Text(text = "✓ Aktywna", color = Color(0xFF4CAF50), style = MaterialTheme.typography.bodySmall)
+        } else {
+            configs.value?.forEach { config ->
+                item {
+                    AdminCard(title = config.nazwaParametru ?: "Brak nazwy") {
+                        Column {
+                            Text(text = "Wartość: ${config.wartoscParametru}", style = MaterialTheme.typography.bodySmall)
+                            Text(text = "Opis: ${config.opis ?: "Brak opisu"}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                Button(onClick = {
+                                    configToEdit = config
+                                    showConfigDialog = true
+                                }, colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)) {
+                                    Text("Edytuj")
+                                }
+                            }
                         }
                     }
                 }
             }
-        } else {
-            item {
-                Text("Brak konfiguracji", modifier = Modifier.padding(16.dp))
-            }
         }
     }
-}
 
-fun getRoleName(roleId: Int): String {
-    return when (roleId) {
-        1 -> "Administrator"
-        2 -> "Magazynier"
-        3 -> "Zaopatrzeniowiec"
-        4 -> "Klient"
-        else -> "Nieznana rola"
+    if (showConfigDialog && configToEdit != null) {
+        ConfigDialog(
+            config = configToEdit,
+            onDismiss = { showConfigDialog = false; configToEdit = null },
+            onConfirm = {
+                showConfigDialog = false
+                configToEdit = null
+                refreshConfigs()
+            }
+        )
     }
 }
 
+@Composable
+fun ConfigDialog(
+    config: KonfiguracijaDTO?,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val context = LocalContext.current
+    var wartosc by remember { mutableStateOf(config?.wartoscParametru ?: "") }
+    val scope = rememberCoroutineScope()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edytuj: ${config?.nazwaParametru ?: "Konfiguracja"}") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(text = "Opis: ${config?.opis ?: "Brak"}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = wartosc,
+                    onValueChange = { wartosc = it },
+                    label = { Text("Wartość") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                scope.launch {
+                    if (config != null) {
+                        val updated = config.copy(wartoscParametru = wartosc)
+                        val result = ApiConnector.edytujKonfiguracje(config.id ?: 0, updated)
+                        if (result.first != null) {
+                            Toast.makeText(context, "Zapisano", Toast.LENGTH_SHORT).show()
+                            onConfirm()
+                        } else {
+                            Toast.makeText(context, "Błąd: ${result.second}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }, colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)) {
+                Text("Zapisz")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Anuluj") }
+        }
+    )
+}
+
+@Composable
+fun OrdersDialog(
+    user: UzytkownikAdminDTO,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val orders = remember { mutableStateOf<List<HistoriaZamowieniaDTO>?>(null) }
+    val isLoading = remember { mutableStateOf(true) }
+    var expandedOrderId by remember { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(user.id) {
+        scope.launch {
+            isLoading.value = true
+            orders.value = ApiConnector.pobierzHistorieZamowien(user.id ?: 0)
+            isLoading.value = false
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Zamówienia: ${user.imie} ${user.nazwisko}") },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp)) {
+                if (isLoading.value) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = DeepBurgundy)
+                    }
+                } else {
+                    val lista = orders.value ?: emptyList()
+                    if (lista.isEmpty()) {
+                        Text("Brak zamówień")
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                            items(lista.size) { idx ->
+                                val z = lista[idx]
+                                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                                    Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(text = "Zamówienie #${z.id}", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                                                Text(text = "Data: ${z.data}", style = MaterialTheme.typography.labelSmall)
+                                                val statusText = if (z.status == 2) "✓ Zrealizowane" else "⧗ W trakcie"
+                                                Text(text = "Status: $statusText", style = MaterialTheme.typography.labelSmall)
+                                            }
+                                            IconButton(onClick = { expandedOrderId = if (expandedOrderId == z.id) null else z.id }) {
+                                                Icon(if (expandedOrderId == z.id) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = "Rozwiń")
+                                            }
+                                        }
+
+                                        if (expandedOrderId == z.id) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            HorizontalDivider()
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(text = "Ilość produktów: ${z.sumaProduktow}", style = MaterialTheme.typography.bodySmall)
+                                            Text(text = "Kwota: ${String.format("%.2f", z.kwota)} PLN", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = DeepBurgundy)
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Column(modifier = Modifier.fillMaxWidth()) {
+                                                if (z.status != 2) {
+                                                    Button(
+                                                        onClick = {
+                                                            scope.launch {
+                                                                val ok = ApiConnector.zmienStatusZamowienia(z.id, 2)
+                                                                if (ok) {
+                                                                    orders.value = ApiConnector.pobierzHistorieZamowien(user.id ?: 0)
+                                                                    expandedOrderId = null
+                                                                    Toast.makeText(context, "Status zmieniony", Toast.LENGTH_SHORT).show()
+                                                                } else Toast.makeText(context, "Błąd zmiany statusu", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        },
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                                                    ) { Text("✓ Oznacz jako zrealizowane") }
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                }
+                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    Button(
+                                                        onClick = {
+                                                            Toast.makeText(context, "Edycja niedostępna - brak endpointu", Toast.LENGTH_LONG).show()
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)
+                                                    ) { Text("✎ Edytuj") }
+                                                    Button(
+                                                        onClick = {
+                                                            Toast.makeText(context, "Usuwanie niedostępne - brak endpointu", Toast.LENGTH_LONG).show()
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                                                    ) { Text("✕ Usuń") }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Zamknij") }
+        }
+    )
+}

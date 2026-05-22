@@ -23,10 +23,10 @@ import androidx.compose.ui.unit.sp
 
 fun getRolaName(rolaId: Int?): String {
     return when (rolaId) {
-        0 -> "Klient"
-        1 -> "Magazynier"
-        2 -> "Zaopatrzeniowiec"
-        3 -> "Administrator"
+        RoleConstants.ADMINISTRATOR -> "Administrator"
+        RoleConstants.MAGAZYNIER -> "Magazynier"
+        RoleConstants.ZAOPATRZENIOWIEC -> "Zaopatrzeniowiec"
+        RoleConstants.KLIENT -> "Klient"
         else -> "Użytkownik"
     }
 }

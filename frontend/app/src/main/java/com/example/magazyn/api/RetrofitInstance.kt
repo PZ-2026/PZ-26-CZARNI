@@ -1,10 +1,16 @@
 package com.example.magazyn.api
 
 import com.example.magazyn.api.interfaces.*
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+
+object AuthTokenProvider {
+    var token: String? = null
+}
+
 object RetrofitInstance {
     private const val BASE_URL = "http://10.0.2.2:8080/" // lokalny adres ip komputera, powinno działać
                                                              // dla emulatora adres to: http://10.0.2.2:8080/
@@ -25,7 +31,17 @@ object RetrofitInstance {
     val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
+
+    private val authInterceptor = Interceptor { chain ->
+        val requestBuilder = chain.request().newBuilder()
+        AuthTokenProvider.token?.let { token ->
+            requestBuilder.addHeader("Authorization", "Bearer $token")
+        }
+        chain.proceed(requestBuilder.build())
+    }
+
     val client = OkHttpClient.Builder()
+        .addInterceptor(authInterceptor)
         .addInterceptor(logging)
         .build()
 

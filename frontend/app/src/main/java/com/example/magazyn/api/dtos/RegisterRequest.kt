@@ -8,5 +8,5 @@ data class RegisterRequest(
     val haslo: String,
     val firma: String?,
     val nip: String?,
-    val rola: Int = 0
+    val rola: Int = 4
 )

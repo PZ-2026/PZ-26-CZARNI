@@ -35,6 +35,9 @@ public class AdminService {
     @Autowired
     private StanMagazynuRepository stanMagazynuRepository;
 
+    @Autowired
+    private DostawcaRepository dostawcaRepository;
+
     // ============ UŻYTKOWNICY (USER MANAGEMENT) ============
 
     /**
@@ -95,6 +98,13 @@ public class AdminService {
         uzytkownik.setRola(dto.getRola());
         uzytkownik.setFirma(dto.getFirma());
         uzytkownik.setNip(dto.getNip());
+
+        if (!uzytkownik.getEmail().equals(dto.getEmail())) {
+            if (uzytkownikRepository.findByEmail(dto.getEmail()).isPresent()) {
+                throw new IllegalArgumentException("Użytkownik z tym emailem już istnieje");
+            }
+            uzytkownik.setEmail(dto.getEmail());
+        }
 
         Uzytkownik zaktualizowany = uzytkownikRepository.save(uzytkownik);
         return konwertujNaDTO(zaktualizowany);
@@ -322,6 +332,101 @@ public class AdminService {
         konfiguracijaRepository.deleteById(id);
     }
 
+    // ============ DOSTAWCY ============
+
+    /**
+     * Pobierz wszystkich dostawców
+     */
+    public List<DostawcaDTO> pobierzWszystkichDostawcow() {
+        return dostawcaRepository.findAll()
+                .stream()
+                .map(this::konwertujDostawceNaDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Pobierz dostawcę po ID
+     */
+    public Optional<DostawcaDTO> pobierzDostawce(Integer id) {
+        return dostawcaRepository.findById(id)
+                .map(this::konwertujDostawceNaDTO);
+    }
+
+    /**
+     * Utwórz nowego dostawcę
+     */
+    @Transactional
+    public DostawcaDTO utworzDostawce(DostawcaDTO dto) {
+        Dostawca dostawca = new Dostawca();
+        dostawca.setNazwaDostawcy(dto.getNazwaDostawcy());
+        dostawca.setAdres(dto.getAdres());
+        dostawca.setTelefon(dto.getTelefon());
+
+        Dostawca zapisany = dostawcaRepository.save(dostawca);
+        return konwertujDostawceNaDTO(zapisany);
+    }
+
+    /**
+     * Edytuj dostawcę
+     */
+    @Transactional
+    public DostawcaDTO edytujDostawce(Integer id, DostawcaDTO dto) {
+        Dostawca dostawca = dostawcaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Dostawca nie znaleziony"));
+
+        dostawca.setNazwaDostawcy(dto.getNazwaDostawcy());
+        dostawca.setAdres(dto.getAdres());
+        dostawca.setTelefon(dto.getTelefon());
+
+        Dostawca zaktualizowany = dostawcaRepository.save(dostawca);
+        return konwertujDostawceNaDTO(zaktualizowany);
+    }
+
+    /**
+     * Usuń dostawcę
+     */
+    @Transactional
+    public void usunDostawce(Integer id) {
+        if (!dostawcaRepository.existsById(id)) {
+            throw new IllegalArgumentException("Dostawca nie znaleziony");
+        }
+        dostawcaRepository.deleteById(id);
+    }
+
+    // ============ STAN MAGAZYNU ============
+
+    /**
+     * Pobierz cały stan magazynu
+     */
+    public List<StanMagazynuDTO> pobierzCalyStanMagazynu() {
+        return stanMagazynuRepository.findAll()
+                .stream()
+                .map(this::konwertujStanMagazynuNaDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Pobierz stan produktu
+     */
+    public Optional<StanMagazynuDTO> pobierzStanProduktu(Integer idProduktu) {
+        return stanMagazynuRepository.findByProdukt_Id(idProduktu)
+                .map(this::konwertujStanMagazynuNaDTO);
+    }
+
+    /**
+     * Edytuj stan magazynu produktu
+     */
+    @Transactional
+    public StanMagazynuDTO edytujStanMagazynu(Integer id, StanMagazynuDTO dto) {
+        StanMagazynu stan = stanMagazynuRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Stan magazynu nie znaleziony"));
+
+        stan.setIlosc(dto.getIlosc());
+
+        StanMagazynu zaktualizowany = stanMagazynuRepository.save(stan);
+        return konwertujStanMagazynuNaDTO(zaktualizowany);
+    }
+
     // ============ PANEL ADMINISTRATORA / DASHBOARD ============
 
     /**
@@ -334,7 +439,7 @@ public class AdminService {
         panel.setLiczbaUzytkownikow(Math.toIntExact(uzytkownikRepository.count()));
         
         // Statystyki produktów
-        panel.setLiczbaProdutktu(Math.toIntExact(produktRepository.count()));
+        panel.setLiczbaProduktu(Math.toIntExact(produktRepository.count()));
 
         // Dane finansowe za bieżący miesiąc
         panel.setPrzychodyMiesiac(pobierzPrzychodyMiesiac());
@@ -379,4 +484,32 @@ public class AdminService {
         dto.setAktywna(konfiguracja.getAktywna());
         return dto;
     }
+
+    /**
+     * Konwertuj entitę Dostawca na DTO
+     */
+    private DostawcaDTO konwertujDostawceNaDTO(Dostawca dostawca) {
+        DostawcaDTO dto = new DostawcaDTO();
+        dto.setId(dostawca.getId());
+        dto.setNazwaDostawcy(dostawca.getNazwaDostawcy());
+        dto.setAdres(dostawca.getAdres());
+        dto.setTelefon(dostawca.getTelefon());
+        return dto;
+    }
+
+    /**
+     * Konwertuj entitę StanMagazynu na DTO
+     */
+    private StanMagazynuDTO konwertujStanMagazynuNaDTO(StanMagazynu stan) {
+        StanMagazynuDTO dto = new StanMagazynuDTO();
+        dto.setId(stan.getId());
+        dto.setIlosc(stan.getIlosc());
+        if (stan.getProdukt() != null) {
+            dto.setIdProduktu(stan.getProdukt().getId());
+            dto.setNazwaProduktu(stan.getProdukt().getNazwaProduktu());
+            dto.setCenaProduktu(stan.getProdukt().getCena());
+        }
+        return dto;
+    }
 }
+

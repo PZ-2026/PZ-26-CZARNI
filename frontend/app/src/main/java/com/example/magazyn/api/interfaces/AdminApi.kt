@@ -5,7 +5,6 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface AdminApi {
-    // ============ UŻYTKOWNICY ============
     @GET("api/admin/users")
     suspend fun getAllUsers(): Response<List<UzytkownikAdminDTO>>
 
@@ -16,86 +15,57 @@ interface AdminApi {
     suspend fun createUser(@Body user: UzytkownikAdminDTO): Response<UzytkownikAdminDTO>
 
     @PUT("api/admin/users/{id}")
-    suspend fun updateUser(@Path("id") id: Int, @Body user: UzytkownikAdminDTO): Response<UzytkownikAdminDTO>
+    suspend fun updateUser(
+        @Path("id") id: Int,
+        @Body user: Map<String, @JvmSuppressWildcards Any?>
+    ): Response<UzytkownikAdminDTO>
 
     @DELETE("api/admin/users/{id}")
     suspend fun deleteUser(@Path("id") id: Int): Response<Unit>
 
-    @PUT("api/admin/users/{id}/block")
+    @POST("api/admin/users/{id}/block")
     suspend fun blockUser(@Path("id") id: Int): Response<Unit>
 
-    @PUT("api/admin/users/{id}/unblock")
+    @POST("api/admin/users/{id}/unblock")
     suspend fun unblockUser(@Path("id") id: Int): Response<Unit>
 
-    @GET("api/admin/users/role/{roleId}")
-    suspend fun getUsersByRole(@Path("roleId") roleId: Int): Response<List<UzytkownikAdminDTO>>
+    @GET("api/admin/dashboard")
+    suspend fun getDashboard(): Response<PanelAdminaDTO>
 
-    // ============ ROLE ============
-    @PUT("api/admin/users/{id}/role/{newRoleId}")
-    suspend fun updateUserRole(
-        @Path("id") userId: Int,
-        @Path("newRoleId") newRoleId: Int
-    ): Response<UzytkownikAdminDTO>
-
-    @GET("api/admin/roles/statistics")
-    suspend fun getRoleStatistics(): Response<Map<String, Int>>
-
-    // ============ FINANSE ============
     @GET("api/admin/financial/report")
-    suspend fun getFinancialReport(
-        @Query("dataPoczatek") dataPoczatek: String?,
-        @Query("dataKoniec") dataKoniec: String?
-    ): Response<RaportFinansowyDTO>
+    suspend fun getFinancialReport(@Query("dataPoczatek") dataPoczatek: String?, @Query("dataKoniec") dataKoniec: String?): Response<RaportFinansowyDTO>
 
-    @GET("api/admin/financial/revenue-month")
-    suspend fun getMonthlyRevenue(
-        @Query("rok") rok: Int?,
-        @Query("miesiac") miesiac: Int?
-    ): Response<Map<String, Any>>
-
-    @GET("api/admin/financial/expenses-month")
-    suspend fun getMonthlyExpenses(
-        @Query("rok") rok: Int?,
-        @Query("miesiac") miesiac: Int?
-    ): Response<Map<String, Any>>
-
-    @GET("api/admin/financial/profit-month")
-    suspend fun getMonthlyProfit(
-        @Query("rok") rok: Int?,
-        @Query("miesiac") miesiac: Int?
-    ): Response<Map<String, Any>>
-
-    @GET("api/admin/financial/history")
-    suspend fun getFinancialHistory(
-        @Query("limit") limit: Int = 100
-    ): Response<List<DaneFinansoweDTO>>
-
-    @POST("api/admin/financial/entry")
-    suspend fun addFinancialEntry(@Body entry: DaneFinansoweDTO): Response<DaneFinansoweDTO>
-
-    // ============ KONFIGURACJA ============
     @GET("api/admin/configuration")
     suspend fun getAllConfiguration(): Response<List<KonfiguracijaDTO>>
 
-    @GET("api/admin/configuration/active")
-    suspend fun getActiveConfiguration(): Response<List<KonfiguracijaDTO>>
-
-    @GET("api/admin/configuration/{parametr}")
-    suspend fun getConfiguration(@Path("parametr") parametr: String): Response<KonfiguracijaDTO>
-
-    @POST("api/admin/configuration")
-    suspend fun createConfiguration(@Body config: KonfiguracijaDTO): Response<KonfiguracijaDTO>
-
     @PUT("api/admin/configuration/{id}")
-    suspend fun updateConfiguration(
-        @Path("id") id: Int,
-        @Body config: KonfiguracijaDTO
-    ): Response<KonfiguracijaDTO>
+    suspend fun updateKonfiguracja(@Path("id") id: Int, @Body config: KonfiguracijaDTO): Response<KonfiguracijaDTO>
 
-    @DELETE("api/admin/configuration/{id}")
-    suspend fun deleteConfiguration(@Path("id") id: Int): Response<Unit>
+    // ============ DOSTAWCY ============
 
-    // ============ PANEL ADMINA (DASHBOARD) ============
-    @GET("api/admin/dashboard")
-    suspend fun getDashboard(): Response<PanelAdminaDTO>
+    @GET("api/admin/dostawcy")
+    suspend fun getAllDostawcy(): Response<List<DostawcaDTO>>
+
+    @GET("api/admin/dostawcy/{id}")
+    suspend fun getDostawcaById(@Path("id") id: Int): Response<DostawcaDTO>
+
+    @POST("api/admin/dostawcy")
+    suspend fun createDostawca(@Body dostawca: DostawcaDTO): Response<DostawcaDTO>
+
+    @PUT("api/admin/dostawcy/{id}")
+    suspend fun updateDostawca(@Path("id") id: Int, @Body dostawca: DostawcaDTO): Response<DostawcaDTO>
+
+    @DELETE("api/admin/dostawcy/{id}")
+    suspend fun deleteDostawca(@Path("id") id: Int): Response<Unit>
+
+    // ============ STAN MAGAZYNU ============
+
+    @GET("api/admin/magazyn")
+    suspend fun getAllStanMagazynu(): Response<List<StanMagazynuDTO>>
+
+    @GET("api/admin/magazyn/produkt/{idProduktu}")
+    suspend fun getStanProduktu(@Path("idProduktu") idProduktu: Int): Response<StanMagazynuDTO>
+
+    @PUT("api/admin/magazyn/{id}")
+    suspend fun updateStanMagazynu(@Path("id") id: Int, @Body stan: StanMagazynuDTO): Response<StanMagazynuDTO>
 }

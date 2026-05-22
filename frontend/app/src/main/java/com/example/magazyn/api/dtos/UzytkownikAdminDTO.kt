@@ -5,9 +5,10 @@ data class UzytkownikAdminDTO(
     val imie: String,
     val nazwisko: String,
     val email: String,
-    val telefon: String,
+    val telefon: String?,
     val firma: String?,
     val nip: String?,
     val rola: Int,
-    val zablokowany: Boolean = false
+    val zablokowany: Boolean = false,
+    val haslo: String? = null
 )

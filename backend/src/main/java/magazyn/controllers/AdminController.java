@@ -339,6 +339,124 @@ public class AdminController {
         }
     }
 
+    // ============ DOSTAWCY ============
+
+    /**
+     * GET /api/admin/dostawcy - Pobierz wszystkich dostawców
+     */
+    @GetMapping("/dostawcy")
+    public ResponseEntity<?> pobierzWszystkichDostawcow() {
+        try {
+            List<DostawcaDTO> dostawcy = adminService.pobierzWszystkichDostawcow();
+            return ResponseEntity.ok(dostawcy);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+        }
+    }
+
+    /**
+     * GET /api/admin/dostawcy/{id} - Pobierz dostawcę po ID
+     */
+    @GetMapping("/dostawcy/{id}")
+    public ResponseEntity<?> pobierzDostawce(@PathVariable Integer id) {
+        try {
+            return adminService.pobierzDostawce(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+        }
+    }
+
+    /**
+     * POST /api/admin/dostawcy - Utwórz nowego dostawcę
+     */
+    @PostMapping("/dostawcy")
+    public ResponseEntity<?> utworzDostawce(@Valid @RequestBody DostawcaDTO dto) {
+        try {
+            DostawcaDTO nowyDostawca = adminService.utworzDostawce(dto);
+            return ResponseEntity.ok(nowyDostawca);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body("Błąd: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+        }
+    }
+
+    /**
+     * PUT /api/admin/dostawcy/{id} - Edytuj dostawcę
+     */
+    @PutMapping("/dostawcy/{id}")
+    public ResponseEntity<?> edytujDostawce(@PathVariable Integer id, @Valid @RequestBody DostawcaDTO dto) {
+        try {
+            DostawcaDTO zaktualizowany = adminService.edytujDostawce(id, dto);
+            return ResponseEntity.ok(zaktualizowany);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body("Błąd: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+        }
+    }
+
+    /**
+     * DELETE /api/admin/dostawcy/{id} - Usuń dostawcę
+     */
+    @DeleteMapping("/dostawcy/{id}")
+    public ResponseEntity<?> usunDostawce(@PathVariable Integer id) {
+        try {
+            adminService.usunDostawce(id);
+            return ResponseEntity.ok("Dostawca został usunięty");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body("Błąd: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+        }
+    }
+
+    // ============ STAN MAGAZYNU ============
+
+    /**
+     * GET /api/admin/magazyn - Pobierz cały stan magazynu
+     */
+    @GetMapping("/magazyn")
+    public ResponseEntity<?> pobierzCalyStanMagazynu() {
+        try {
+            List<StanMagazynuDTO> stan = adminService.pobierzCalyStanMagazynu();
+            return ResponseEntity.ok(stan);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+        }
+    }
+
+    /**
+     * GET /api/admin/magazyn/{idProduktu} - Pobierz stan produktu
+     */
+    @GetMapping("/magazyn/produkt/{idProduktu}")
+    public ResponseEntity<?> pobierzStanProduktu(@PathVariable Integer idProduktu) {
+        try {
+            return adminService.pobierzStanProduktu(idProduktu)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+        }
+    }
+
+    /**
+     * PUT /api/admin/magazyn/{id} - Edytuj stan magazynu
+     */
+    @PutMapping("/magazyn/{id}")
+    public ResponseEntity<?> edytujStanMagazynu(@PathVariable Integer id, @Valid @RequestBody StanMagazynuDTO dto) {
+        try {
+            StanMagazynuDTO zaktualizowany = adminService.edytujStanMagazynu(id, dto);
+            return ResponseEntity.ok(zaktualizowany);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body("Błąd: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+        }
+    }
+
     // ============ PANEL ADMINISTRATORA / DASHBOARD ============
 
     /**
@@ -354,3 +472,4 @@ public class AdminController {
         }
     }
 }
+

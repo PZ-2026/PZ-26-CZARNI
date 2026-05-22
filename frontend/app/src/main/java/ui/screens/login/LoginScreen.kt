@@ -55,7 +55,7 @@ fun LoginScreen(onLoginSuccess: (UzytkownikDTO) -> Unit, onNavigateToRegister: (
             OutlinedTextField(
                 value = login,
                 onValueChange = { login = it },
-                label = { Text("Login") },
+                label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp)
             )
