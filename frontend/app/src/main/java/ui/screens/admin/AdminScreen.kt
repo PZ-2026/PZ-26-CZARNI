@@ -751,12 +751,19 @@ fun FinanceTab() {
     val report = remember { mutableStateOf<RaportFinansowyDTO?>(null) }
     val isLoading = remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
+    val przychodyMiesiac = remember { mutableStateOf<Double?>(null) }
+    val wydatkiMiesiac = remember { mutableStateOf<Double?>(null) }
+    val zyskMiesiac = remember { mutableStateOf<Double?>(null) }
 
     LaunchedEffect(Unit) {
         scope.launch {
             try {
                 val result = ApiConnector.pobierzRaportFinansowy(null, null)
                 report.value = result
+                // fetch also monthly quick stats
+                przychodyMiesiac.value = ApiConnector.pobierzPrzychodyMiesiac()
+                wydatkiMiesiac.value = ApiConnector.pobierzWydatkiMiesiac()
+                zyskMiesiac.value = ApiConnector.pobierzZyskMiesiac()
                 isLoading.value = false
             } catch (e: Exception) {
                 isLoading.value = false
@@ -773,13 +780,38 @@ fun FinanceTab() {
                     CircularProgressIndicator(color = DeepBurgundy)
                 }
             }
-        } else if (report.value != null) {
-            item {
-                AdminCard(title = "Podsumowanie okresu") {
-                    FinanceRow("Przychody", "${report.value!!.sumaPrzychodow} PLN", Color(0xFF4CAF50))
-                    FinanceRow("Wydatki", "${report.value!!.sumaWydatkow} PLN", Color(0xFFF44336))
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    FinanceRow("Zysk netto", "${report.value!!.sumaZysku} PLN", DeepBurgundy)
+        } else {
+            if (report.value != null) {
+                item {
+                    AdminCard(title = "Podsumowanie okresu") {
+                        FinanceRow("Przychody", "${report.value!!.sumaPrzychodow} PLN", Color(0xFF4CAF50))
+                        FinanceRow("Wydatki", "${report.value!!.sumaWydatkow} PLN", Color(0xFFF44336))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        FinanceRow("Zysk netto", "${report.value!!.sumaZysku} PLN", DeepBurgundy)
+                    }
+                }
+            } else {
+                item {
+                    AdminCard(title = "Podsumowanie okresu") {
+                        Text("Brak danych do wyświetlenia. Spróbuj ponownie później.", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+
+            if (przychodyMiesiac.value != null || wydatkiMiesiac.value != null || zyskMiesiac.value != null) {
+                item {
+                    AdminCard(title = "Bieżący miesiąc") {
+                        FinanceRow("Przychody (mies.)", "${przychodyMiesiac.value ?: 0.0} PLN", Color(0xFF4CAF50))
+                        FinanceRow("Wydatki (mies.)", "${wydatkiMiesiac.value ?: 0.0} PLN", Color(0xFFF44336))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        FinanceRow("Zysk (mies.)", "${zyskMiesiac.value ?: 0.0} PLN", DeepBurgundy)
+                    }
+                }
+            } else {
+                item {
+                    AdminCard(title = "Bieżący miesiąc") {
+                        Text("Brak danych do wyświetlenia dla bieżącego miesiąca.", style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
         }

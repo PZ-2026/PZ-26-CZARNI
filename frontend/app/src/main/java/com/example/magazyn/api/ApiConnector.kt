@@ -72,6 +72,27 @@ object ApiConnector {
         } catch (e: Exception) { null }
     }
 
+    suspend fun pobierzPrzychodyMiesiac(): Double? {
+        return try {
+            val response = RetrofitInstance.adminApi.getRevenueMonth()
+            if (response.isSuccessful) response.body()?.get("przychody") else null
+        } catch (e: Exception) { null }
+    }
+
+    suspend fun pobierzWydatkiMiesiac(): Double? {
+        return try {
+            val response = RetrofitInstance.adminApi.getExpensesMonth()
+            if (response.isSuccessful) response.body()?.get("wydatki") else null
+        } catch (e: Exception) { null }
+    }
+
+    suspend fun pobierzZyskMiesiac(): Double? {
+        return try {
+            val response = RetrofitInstance.adminApi.getProfitMonth()
+            if (response.isSuccessful) response.body()?.get("zysk") else null
+        } catch (e: Exception) { null }
+    }
+
     suspend fun pobierzDanePanelu(): PanelAdminaDTO? {
         return try {
             val response = RetrofitInstance.adminApi.getDashboard()

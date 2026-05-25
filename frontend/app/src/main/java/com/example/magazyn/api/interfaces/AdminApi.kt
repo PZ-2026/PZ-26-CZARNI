@@ -35,6 +35,15 @@ interface AdminApi {
     @GET("api/admin/financial/report")
     suspend fun getFinancialReport(@Query("dataPoczatek") dataPoczatek: String?, @Query("dataKoniec") dataKoniec: String?): Response<RaportFinansowyDTO>
 
+    @GET("api/admin/financial/revenue-month")
+    suspend fun getRevenueMonth(): Response<Map<String, Double>>
+
+    @GET("api/admin/financial/expenses-month")
+    suspend fun getExpensesMonth(): Response<Map<String, Double>>
+
+    @GET("api/admin/financial/profit-month")
+    suspend fun getProfitMonth(): Response<Map<String, Double>>
+
     @GET("api/admin/configuration")
     suspend fun getAllConfiguration(): Response<List<KonfiguracijaDTO>>
 
