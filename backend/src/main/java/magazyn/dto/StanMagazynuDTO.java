@@ -18,7 +18,6 @@ public class StanMagazynuDTO {
     @NotNull(message = "Ilość jest wymagana")
     private BigDecimal ilosc;
 
-    @NotNull(message = "ID produktu jest wymagane")
     private Integer idProduktu;
 
     private String nazwaProduktu;

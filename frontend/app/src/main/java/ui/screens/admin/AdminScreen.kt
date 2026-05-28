@@ -1,5 +1,9 @@
 package ui.screens.admin
 
+import android.content.Context
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
+import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -25,8 +29,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.magazyn.api.ApiConnector
+import java.io.File
+import java.io.FileOutputStream
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import com.example.magazyn.api.dtos.*
 import com.example.magazyn.ui.theme.DeepBurgundy
+import java.math.BigDecimal
 import com.example.magazyn.ui.theme.SoftPinkBG
 import com.example.magazyn.utils.AppSettings
 import com.example.magazyn.utils.RoleConstants
@@ -46,9 +56,7 @@ fun AdminDashboard(
         AdminBottomNavItem.Dostawcy,
         AdminBottomNavItem.Magazyn,
         AdminBottomNavItem.Finanse,
-        AdminBottomNavItem.Raporty,
-        AdminBottomNavItem.Ustawienia,
-        AdminBottomNavItem.Wyloguj
+        AdminBottomNavItem.Raporty
     )
 
     Scaffold(
@@ -81,18 +89,21 @@ fun AdminDashboard(
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Panel Administratora",
+                            text = "Panel Admina",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = DeepBurgundy
                         )
                         Text(
-                            text = "Zarządzanie systemem magazynu",
+                            text = "Zarządzanie systemem",
                             style = MaterialTheme.typography.bodySmall,
                             color = DeepBurgundy.copy(alpha = 0.6f)
                         )
+                    }
+                    IconButton(onClick = onLogout) {
+                        Icon(Icons.Default.Logout, contentDescription = "Wyloguj", tint = DeepBurgundy)
                     }
                 }
             }
@@ -107,6 +118,7 @@ fun AdminDashboard(
                         icon = { Icon(item.icon, contentDescription = item.title) },
                         label = { Text(item.title, style = MaterialTheme.typography.labelSmall) },
                         selected = selectedItem.intValue == index,
+                        alwaysShowLabel = false, // Etykieta pokaże się tylko dla wybranego elementu
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = DeepBurgundy,
                             selectedTextColor = DeepBurgundy,
@@ -115,11 +127,7 @@ fun AdminDashboard(
                             unselectedTextColor = Color.Gray
                         ),
                         onClick = {
-                            if (item is AdminBottomNavItem.Wyloguj) {
-                                onLogout()
-                            } else {
-                                selectedItem.intValue = index
-                            }
+                            selectedItem.intValue = index
                         }
                     )
                 }
@@ -133,10 +141,6 @@ fun AdminDashboard(
                 2 -> MagazynTab()
                 3 -> FinanceTab()
                 4 -> DashboardTab()
-                5 -> SettingsTab(
-                    darkTheme = darkTheme,
-                    onDarkModeChange = onDarkModeChange
-                )
             }
         }
     }
@@ -149,6 +153,7 @@ fun UsersTab() {
     val error = remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var searchQuery by remember { mutableStateOf("") }
 
     var showUserDialog by remember { mutableStateOf(false) }
     var userToEdit by remember { mutableStateOf<UzytkownikAdminDTO?>(null) }
@@ -211,6 +216,29 @@ fun UsersTab() {
             }
         }
 
+        item {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Szukaj użytkownika") },
+                placeholder = { Text("imię, nazwisko, email lub telefon") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+            )
+        }
+
+        val filteredUsers = users.value?.filter { user ->
+            val query = searchQuery.trim().lowercase()
+            query.isBlank() || listOf(
+                user.imie,
+                user.nazwisko,
+                user.email ?: "",
+                user.telefon ?: ""
+            ).any { it.lowercase().contains(query) }
+        } ?: emptyList()
+
         if (isLoading.value) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
@@ -225,57 +253,66 @@ fun UsersTab() {
                 }
             }
         } else if (users.value != null) {
-            items(users.value!!) { user ->
-                AdminCard(title = "${user.imie} ${user.nazwisko}") {
-                    Column {
-                        Text(text = "Email: ${user.email}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-                        Text(text = "Telefon: ${user.telefon ?: "Brak"}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-                        Text(text = "Rola: ${getRolaName(user.rola)}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-                        if (user.zablokowany) {
-                            Text(text = "⛔ Zablokowany", color = Color.Red, style = MaterialTheme.typography.bodySmall)
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            IconButton(onClick = {
-                                ordersForUser = user
-                                showOrdersDialog = true
-                            }) { Icon(Icons.Default.ListAlt, contentDescription = "Zamówienia", tint = DeepBurgundy) }
-                            IconButton(onClick = {
-                                userToEdit = user
-                                showUserDialog = true
-                            }) { Icon(Icons.Default.Edit, contentDescription = "Edytuj", tint = DeepBurgundy) }
-
-                            IconButton(onClick = {
-                                scope.launch {
-                                    val success = if (user.zablokowany) {
-                                        ApiConnector.odblokowakUzytkownika(user.id ?: 0)
-                                    } else {
-                                        ApiConnector.zablokowakUzytkownika(user.id ?: 0)
-                                    }
-                                    if (success) refreshUsers()
-                                    else Toast.makeText(context, "Błąd zmiany statusu", Toast.LENGTH_SHORT).show()
-                                }
-                            }) {
-                                Icon(
-                                    if (user.zablokowany) Icons.Default.LockOpen else Icons.Default.Block,
-                                    contentDescription = if (user.zablokowany) "Odblokuj" else "Zablokuj",
-                                    tint = if (user.zablokowany) Color.Green else Color.Red
-                                )
+            if (filteredUsers.isEmpty()) {
+                item {
+                    AdminCard(title = "Brak wyników") {
+                        Text("Nie znaleziono użytkowników pasujących do zapytania.", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            } else {
+                items(filteredUsers) { user ->
+                    AdminCard(title = "${user.imie} ${user.nazwisko}") {
+                        Column {
+                            Text(text = "Email: ${user.email}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                            Text(text = "Telefon: ${user.telefon ?: "Brak"}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                            Text(text = "Rola: ${getRolaName(user.rola)}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                            if (user.zablokowany) {
+                                Text(text = "⛔ Zablokowany", color = Color.Red, style = MaterialTheme.typography.bodySmall)
                             }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                IconButton(onClick = {
+                                    ordersForUser = user
+                                    showOrdersDialog = true
+                                }) { Icon(Icons.Default.ListAlt, contentDescription = "Zamówienia", tint = DeepBurgundy) }
 
-                            IconButton(onClick = {
-                                scope.launch {
-                                    if (ApiConnector.usunUzytkownika(user.id ?: 0)) {
-                                        refreshUsers()
-                                        Toast.makeText(context, "Użytkownik usunięty", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(context, "Błąd usuwania", Toast.LENGTH_SHORT).show()
+                                IconButton(onClick = {
+                                    userToEdit = user
+                                    showUserDialog = true
+                                }) { Icon(Icons.Default.Edit, contentDescription = "Edytuj", tint = DeepBurgundy) }
+
+                                IconButton(onClick = {
+                                    scope.launch {
+                                        val success = if (user.zablokowany) {
+                                            ApiConnector.odblokowakUzytkownika(user.id ?: 0)
+                                        } else {
+                                            ApiConnector.zablokowakUzytkownika(user.id ?: 0)
+                                        }
+                                        if (success) refreshUsers()
+                                        else Toast.makeText(context, "Błąd zmiany statusu", Toast.LENGTH_SHORT).show()
                                     }
+                                }) {
+                                    Icon(
+                                        if (user.zablokowany) Icons.Default.LockOpen else Icons.Default.Block,
+                                        contentDescription = if (user.zablokowany) "Odblokuj" else "Zablokuj",
+                                        tint = if (user.zablokowany) Color.Green else Color.Red
+                                    )
                                 }
-                            }) { Icon(Icons.Default.Delete, contentDescription = "Usuń", tint = Color.Red) }
+
+                                IconButton(onClick = {
+                                    scope.launch {
+                                        if (ApiConnector.usunUzytkownika(user.id ?: 0)) {
+                                            refreshUsers()
+                                            Toast.makeText(context, "Użytkownik usunięty", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Błąd usuwania", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }) { Icon(Icons.Default.Delete, contentDescription = "Usuń", tint = Color.Red) }
+                            }
                         }
                     }
                 }
@@ -339,7 +376,7 @@ fun UserDialog(
                         telefon = it
                         if (it.isNotBlank()) {
                             val digits = it.filter { c -> c.isDigit() }
-                            telefonError = if (digits.length != 10) "Telefon powinien mieć dokładnie 10 cyfr (wpisano: ${digits.length})" else null
+                            telefonError = if (digits.length != 9) "Telefon powinien mieć dokładnie 9 cyfr" else null
                         } else telefonError = null
                     },
                     label = { Text("Telefon") },
@@ -354,7 +391,7 @@ fun UserDialog(
                         nip = it
                         if (it.isNotBlank()) {
                             val digits = it.filter { c -> c.isDigit() }
-                            nipError = if (digits.length != 10) "NIP powinien mieć dokładnie 10 cyfr (wpisano: ${digits.length})" else null
+                            nipError = if (digits.length != 10) "NIP powinien mieć dokładnie 10 cyfr" else null
                         } else nipError = null
                     },
                     label = { Text("NIP") },
@@ -366,7 +403,7 @@ fun UserDialog(
                 OutlinedTextField(
                     value = haslo,
                     onValueChange = { haslo = it },
-                    label = { Text(if (isEditing) "Nowe hasło (zostaw puste by nie zmieniać)" else "Hasło (wymagane)") },
+                    label = { Text(if (isEditing) "Nowe hasło (puste by nie zmieniać)" else "Hasło (wymagane)") },
                     modifier = Modifier.fillMaxWidth(),
                     visualTransformation = PasswordVisualTransformation()
                 )
@@ -391,7 +428,6 @@ fun UserDialog(
         },
         confirmButton = {
             Button(onClick = {
-                // walidacja
                 if (!isEditing && haslo.isBlank()) {
                     Toast.makeText(context, "Hasło jest wymagane!", Toast.LENGTH_SHORT).show()
                     return@Button
@@ -530,14 +566,30 @@ fun DostawcyTab() {
 fun MagazynTab() {
     val stan = remember { mutableStateOf<List<StanMagazynuDTO>?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var showDialog by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
     var stanToEdit by remember { mutableStateOf<StanMagazynuDTO?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
+    fun refreshStan() {
         scope.launch {
             stan.value = ApiConnector.pobierzCalyStanMagazynu()
         }
     }
+
+    LaunchedEffect(Unit) {
+        refreshStan()
+    }
+
+    val filteredStan = stan.value?.filter { produkt ->
+        val query = searchQuery.trim().lowercase()
+        query.isBlank() || listOf(
+            produkt.nazwa ?: "",
+            produkt.id?.toString() ?: "",
+            produkt.ilosc.toString()
+        ).any { it.lowercase().contains(query) }
+    } ?: emptyList()
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -545,8 +597,33 @@ fun MagazynTab() {
         .padding(16.dp)) {
         AdminSectionHeader("Stan Magazynu", Icons.Default.Warehouse)
 
-        stan.value?.let { lista ->
-            lista.forEach { produkt ->
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text("Szukaj w magazynie") },
+            placeholder = { Text("nazwa produktu lub ID") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+        )
+
+        Button(
+            onClick = { showAddDialog = true },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Dodaj nowy produkt")
+        }
+
+        if (filteredStan.isEmpty()) {
+            Text(
+                text = if (stan.value == null) "Ładowanie..." else "Brak produktów w magazynie",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
+            )
+        } else {
+            filteredStan.forEach { produkt ->
                 Card(modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp), shape = RoundedCornerShape(12.dp)) {
@@ -554,21 +631,25 @@ fun MagazynTab() {
                         .fillMaxWidth()
                         .padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
-                            // Używamy bezpiecznego pola ID zamiast nieistniejącego nazwa
-                            Text("Produkt ID: ${produkt.id ?: "Nieznany"}", fontWeight = FontWeight.Bold)
+                            Text(produkt.nazwa ?: "Produkt ID: ${produkt.id ?: "Nieznany"}", fontWeight = FontWeight.Bold)
+                            Text("ID produktu: ${produkt.id ?: "Brak"}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                             Text("Ilość: ${produkt.ilosc}", style = MaterialTheme.typography.bodySmall)
-
-                            // Zakomentowane do momentu aktualizacji StanMagazynuDTO o pole cena
-                            /*
                             if (produkt.cena != null) {
-                                Text("Cena: ${produkt.cena}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                                Text("Cena: ${produkt.cena} PLN", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                             }
-                            */
                         }
                         IconButton(onClick = {
                             stanToEdit = produkt
                             showDialog = true
                         }) { Icon(Icons.Default.Edit, contentDescription = "Edytuj", tint = DeepBurgundy) }
+                        IconButton(onClick = {
+                            scope.launch {
+                                if (ApiConnector.usunStanMagazynu(produkt.id ?: 0)) {
+                                    refreshStan()
+                                    Toast.makeText(context, "Produkt usunięty", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }) { Icon(Icons.Default.Delete, contentDescription = "Usuń", tint = Color.Red) }
                     }
                 }
             }
@@ -581,8 +662,20 @@ fun MagazynTab() {
             onDismiss = { showDialog = false },
             onConfirm = {
                 scope.launch {
-                    stan.value = ApiConnector.pobierzCalyStanMagazynu()
+                    refreshStan()
                     showDialog = false
+                }
+            }
+        )
+    }
+
+    if (showAddDialog) {
+        MagazynAddDialog(
+            onDismiss = { showAddDialog = false },
+            onConfirm = {
+                scope.launch {
+                    refreshStan()
+                    showAddDialog = false
                 }
             }
         )
@@ -621,7 +714,6 @@ fun DostawcaDialog(
                     return@Button
                 }
                 scope.launch {
-                    // Wymuszenie Int w id zamiast Int? aby naprawić błąd argument mismatch
                     val dto = DostawcaDTO(id = dostawca?.id ?: 0, nazwa = nazwa, adres = adres, telefon = telefon)
                     val result = if (isEditing) {
                         ApiConnector.edytujDostawce(dostawca?.id ?: 0, dto)
@@ -657,7 +749,6 @@ fun MagazynDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        // Zmieniono na produkt.id dla bezpieczeństwa kompilacji
         title = { Text("Edytuj ilość - ID: ${stan?.id ?: "Nieznany"}") },
         text = {
             Column {
@@ -682,6 +773,75 @@ fun MagazynDialog(
                 }
             }, colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)) {
                 Text("Zapisz")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Anuluj") }
+        }
+    )
+}
+
+@Composable
+fun MagazynAddDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var nazwa by remember { mutableStateOf("") }
+    var ilosc by remember { mutableStateOf("") }
+    var cena by remember { mutableStateOf("") }
+    var kodKreskowy by remember { mutableStateOf("") }
+    var jednostka by remember { mutableStateOf("szt.") }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Dodaj nowy produkt do magazynu") },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                OutlinedTextField(value = nazwa, onValueChange = { nazwa = it }, label = { Text("Nazwa produktu") }, modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(value = kodKreskowy, onValueChange = { kodKreskowy = it }, label = { Text("Kod kreskowy") }, modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(value = ilosc, onValueChange = { ilosc = it }, label = { Text("Ilość") }, modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(value = cena, onValueChange = { cena = it }, label = { Text("Cena") }, modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(value = jednostka, onValueChange = { jednostka = it }, label = { Text("Jednostka") }, modifier = Modifier.fillMaxWidth())
+                if (error != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = error ?: "", color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val parsedIlosc = ilosc.toIntOrNull()
+                val parsedCena = cena.toBigDecimalOrNull()
+                if (nazwa.isBlank() || parsedIlosc == null || parsedCena == null || kodKreskowy.isBlank()) {
+                    error = "Wypełnij wszystkie pola poprawnymi wartościami"
+                    return@Button
+                }
+                scope.launch {
+                    val dto = StanMagazynuDTO(
+                        id = 0,
+                        ilosc = parsedIlosc,
+                        nazwa = nazwa.trim(),
+                        cena = parsedCena,
+                        kodKreskowy = kodKreskowy.trim(),
+                        jednostka = jednostka.trim()
+                    )
+                    val result = ApiConnector.utworzStanMagazynu(dto)
+                    if (result.first != null) {
+                        Toast.makeText(context, "Produkt dodany do magazynu", Toast.LENGTH_SHORT).show()
+                        onConfirm()
+                    } else {
+                        error = result.second ?: "Błąd serwera"
+                    }
+                }
+            }, colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)) {
+                Text("Dodaj")
             }
         },
         dismissButton = {
@@ -749,30 +909,109 @@ fun AdminCard(
 @Composable
 fun FinanceTab() {
     val report = remember { mutableStateOf<RaportFinansowyDTO?>(null) }
+    val history = remember { mutableStateOf<List<DaneFinansoweDTO>?>(null) }
     val isLoading = remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
     val przychodyMiesiac = remember { mutableStateOf<Double?>(null) }
     val wydatkiMiesiac = remember { mutableStateOf<Double?>(null) }
     val zyskMiesiac = remember { mutableStateOf<Double?>(null) }
+    val startDate = remember { mutableStateOf(LocalDate.now().withDayOfMonth(1).format(DateTimeFormatter.ISO_LOCAL_DATE)) }
+    val endDate = remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)) }
+    val dateError = remember { mutableStateOf<String?>(null) }
+    val historySearch = remember { mutableStateOf("") }
+    val context = LocalContext.current
 
-    LaunchedEffect(Unit) {
-        scope.launch {
-            try {
-                val result = ApiConnector.pobierzRaportFinansowy(null, null)
-                report.value = result
-                // fetch also monthly quick stats
-                przychodyMiesiac.value = ApiConnector.pobierzPrzychodyMiesiac()
-                wydatkiMiesiac.value = ApiConnector.pobierzWydatkiMiesiac()
-                zyskMiesiac.value = ApiConnector.pobierzZyskMiesiac()
-                isLoading.value = false
-            } catch (e: Exception) {
-                isLoading.value = false
+    fun buildQueryRange(): Pair<String, String>? {
+        return try {
+            val start = LocalDate.parse(startDate.value, DateTimeFormatter.ISO_LOCAL_DATE)
+            val end = LocalDate.parse(endDate.value, DateTimeFormatter.ISO_LOCAL_DATE)
+            if (start.isAfter(end)) {
+                dateError.value = "Data początkowa nie może być późniejsza niż końcowa"
+                null
+            } else {
+                dateError.value = null
+                Pair("${start}T00:00:00", "${end}T23:59:59")
             }
+        } catch (e: DateTimeParseException) {
+            dateError.value = "Użyj formatu RRRR-MM-DD"
+            null
         }
     }
 
+    fun refreshFinancialData() {
+        scope.launch {
+            isLoading.value = true
+            val range = buildQueryRange()
+            if (range == null) {
+                isLoading.value = false
+                return@launch
+            }
+            report.value = ApiConnector.pobierzRaportFinansowy(range.first, range.second)
+            history.value = ApiConnector.pobierzHistorieFinansowa(range.first, range.second)
+            przychodyMiesiac.value = ApiConnector.pobierzPrzychodyMiesiac()
+            wydatkiMiesiac.value = ApiConnector.pobierzWydatkiMiesiac()
+            zyskMiesiac.value = ApiConnector.pobierzZyskMiesiac()
+            isLoading.value = false
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        refreshFinancialData()
+    }
+
+    val filteredHistory = history.value?.filter {
+        val query = historySearch.value.trim().lowercase()
+        query.isBlank() || it.typ.lowercase().contains(query) ||
+                it.data.lowercase().contains(query) ||
+                it.idZamowienia?.toString()?.contains(query) == true
+    } ?: emptyList()
+
     LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         item { AdminSectionHeader("Finanse", Icons.Default.Payments) }
+
+        item {
+            AdminCard(title = "Filtruj okres") {
+                Column {
+                    OutlinedTextField(
+                        value = startDate.value,
+                        onValueChange = { startDate.value = it },
+                        label = { Text("Data początkowa") },
+                        placeholder = { Text("RRRR-MM-DD") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = endDate.value,
+                        onValueChange = { endDate.value = it },
+                        label = { Text("Data końcowa") },
+                        placeholder = { Text("RRRR-MM-DD") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (dateError.value != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(text = dateError.value ?: "", color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { refreshFinancialData() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)) {
+                            Text("Pobierz raport")
+                        }
+                        Button(onClick = {
+                            val currentReport = report.value
+                            if (currentReport != null) {
+                                val okres = "${startDate.value} do ${endDate.value}"
+                                val path = zapiszRaportFinansowyDoPdf(context, currentReport, history.value ?: emptyList(), okres)
+                                Toast.makeText(context, if (path != null) "PDF zapisany: $path" else "Nie udało się wygenerować PDF", Toast.LENGTH_LONG).show()
+                            } else {
+                                Toast.makeText(context, "Brak danych do wygenerowania PDF", Toast.LENGTH_SHORT).show()
+                            }
+                        }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))) {
+                            Text("Generuj PDF")
+                        }
+                    }
+                }
+            }
+        }
 
         if (isLoading.value) {
             item {
@@ -781,36 +1020,46 @@ fun FinanceTab() {
                 }
             }
         } else {
-            if (report.value != null) {
-                item {
-                    AdminCard(title = "Podsumowanie okresu") {
-                        FinanceRow("Przychody", "${report.value!!.sumaPrzychodow} PLN", Color(0xFF4CAF50))
-                        FinanceRow("Wydatki", "${report.value!!.sumaWydatkow} PLN", Color(0xFFF44336))
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        FinanceRow("Zysk netto", "${report.value!!.sumaZysku} PLN", DeepBurgundy)
-                    }
-                }
-            } else {
-                item {
-                    AdminCard(title = "Podsumowanie okresu") {
-                        Text("Brak danych do wyświetlenia. Spróbuj ponownie później.", style = MaterialTheme.typography.bodyMedium)
-                    }
+            item {
+                AdminCard(title = "Podsumowanie okresu") {
+                    FinanceRow("Przychody", "${report.value?.sumaPrzychodow ?: 0} PLN", Color(0xFF4CAF50))
+                    FinanceRow("Wydatki", "${report.value?.sumaWydatkow ?: 0} PLN", Color(0xFFF44336))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    FinanceRow("Zysk netto", "${report.value?.sumaZysku ?: 0} PLN", DeepBurgundy)
                 }
             }
 
-            if (przychodyMiesiac.value != null || wydatkiMiesiac.value != null || zyskMiesiac.value != null) {
-                item {
-                    AdminCard(title = "Bieżący miesiąc") {
-                        FinanceRow("Przychody (mies.)", "${przychodyMiesiac.value ?: 0.0} PLN", Color(0xFF4CAF50))
-                        FinanceRow("Wydatki (mies.)", "${wydatkiMiesiac.value ?: 0.0} PLN", Color(0xFFF44336))
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        FinanceRow("Zysk (mies.)", "${zyskMiesiac.value ?: 0.0} PLN", DeepBurgundy)
-                    }
+            item {
+                AdminCard(title = "Bieżący miesiąc") {
+                    FinanceRow("Przychody (mies.)", "${przychodyMiesiac.value ?: 0.0} PLN", Color(0xFF4CAF50))
+                    FinanceRow("Wydatki (mies.)", "${wydatkiMiesiac.value ?: 0.0} PLN", Color(0xFFF44336))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    FinanceRow("Zysk (mies.)", "${zyskMiesiac.value ?: 0.0} PLN", DeepBurgundy)
                 }
-            } else {
-                item {
-                    AdminCard(title = "Bieżący miesiąc") {
-                        Text("Brak danych do wyświetlenia dla bieżącego miesiąca.", style = MaterialTheme.typography.bodyMedium)
+            }
+
+            item {
+                AdminCard(title = "Historia finansowa") {
+                    OutlinedTextField(
+                        value = historySearch.value,
+                        onValueChange = { historySearch.value = it },
+                        label = { Text("Szukaj w historii") },
+                        placeholder = { Text("typ, data lub ID zamówienia") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (filteredHistory.isEmpty()) {
+                        Text("Brak pozycji dla wybranego okresu lub zapytania.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    } else {
+                        filteredHistory.take(10).forEach { item ->
+                            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                Text("${item.data} - ${item.typ}", fontWeight = FontWeight.Bold)
+                                Text("Przychody: ${item.przychody} PLN, Wydatki: ${item.wydatki} PLN, Zysk: ${item.zysk} PLN", style = MaterialTheme.typography.bodySmall)
+                                item.idZamowienia?.let { Text("Zamówienie ID: $it", style = MaterialTheme.typography.bodySmall, color = Color.Gray) }
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+                            }
+                        }
                     }
                 }
             }
@@ -826,6 +1075,61 @@ fun FinanceRow(label: String, value: String, color: Color) {
     ) {
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
         Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = color)
+    }
+}
+
+fun zapiszRaportFinansowyDoPdf(context: Context, raport: RaportFinansowyDTO, historia: List<DaneFinansoweDTO>, okres: String): String? {
+    return try {
+        val fileName = "raport_finansowy_${LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)}.pdf"
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val file = File(downloadsDir, fileName)
+        val document = PdfDocument()
+        var pageNumber = 1
+        fun createPage(): PdfDocument.Page {
+            val pageInfo = PdfDocument.PageInfo.Builder(595, 842, pageNumber).create()
+            pageNumber += 1
+            return document.startPage(pageInfo)
+        }
+
+        var page = createPage()
+        var canvas = page.canvas
+        val paint = Paint().apply {
+            textSize = 12f
+            color = android.graphics.Color.BLACK
+        }
+
+        var y = 40f
+        canvas.drawText("Raport finansowy", 40f, y, paint)
+        y += 24f
+        canvas.drawText("Okres: $okres", 40f, y, paint)
+        y += 24f
+        canvas.drawText("Przychody: ${raport.sumaPrzychodow} PLN", 40f, y, paint)
+        y += 20f
+        canvas.drawText("Wydatki: ${raport.sumaWydatkow} PLN", 40f, y, paint)
+        y += 20f
+        canvas.drawText("Zysk netto: ${raport.sumaZysku} PLN", 40f, y, paint)
+        y += 32f
+        canvas.drawText("Historia finansowa:", 40f, y, paint)
+        y += 20f
+
+        historia.forEach { item ->
+            if (y > 780f) {
+                document.finishPage(page)
+                page = createPage()
+                canvas = page.canvas
+                y = 40f
+            }
+            canvas.drawText("${item.data} | ${item.typ} | Przychody: ${item.przychody} PLN | Wydatki: ${item.wydatki} PLN | Zysk: ${item.zysk} PLN", 40f, y, paint)
+            y += 18f
+        }
+
+        document.finishPage(page)
+        FileOutputStream(file).use { document.writeTo(it) }
+        document.close()
+        file.absolutePath
+    } catch (e: Exception) {
+        Log.e("AdminScreen", "Błąd generowania PDF", e)
+        null
     }
 }
 
@@ -871,152 +1175,6 @@ fun DashboardTab() {
             }
         }
     }
-}
-
-@Composable
-fun SettingsTab(
-    darkTheme: Boolean,
-    onDarkModeChange: (Boolean) -> Unit
-) {
-    val context = LocalContext.current
-    val configs = remember { mutableStateOf<List<KonfiguracijaDTO>?>(null) }
-    val isLoading = remember { mutableStateOf(true) }
-    val darkMode = remember { mutableStateOf(darkTheme) }
-    val scope = rememberCoroutineScope()
-    var showConfigDialog by remember { mutableStateOf(false) }
-    var configToEdit by remember { mutableStateOf<KonfiguracijaDTO?>(null) }
-
-    fun refreshConfigs() {
-        scope.launch {
-            isLoading.value = true
-            val result = ApiConnector.pobierzWszystkoKonfiguracje()
-            configs.value = result
-            isLoading.value = false
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        refreshConfigs()
-    }
-
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        item { AdminSectionHeader("Ustawienia", Icons.Default.Settings) }
-
-        item {
-            AdminCard(title = "Preferencje aplikacji") {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Tryb ciemny", style = MaterialTheme.typography.bodyLarge)
-                            Text("Włącz lub wyłącz ciemny motyw.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                        }
-                        Switch(
-                            checked = darkMode.value,
-                            onCheckedChange = {
-                                darkMode.value = it
-                                AppSettings.setDarkMode(context, it)
-                                onDarkModeChange(it)
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        item { AdminSectionHeader("Konfiguracja systemu", Icons.Default.Tune) }
-
-        if (isLoading.value) {
-            item {
-                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = DeepBurgundy)
-                }
-            }
-        } else {
-            configs.value?.forEach { config ->
-                item {
-                    AdminCard(title = config.nazwaParametru ?: "Brak nazwy") {
-                        Column {
-                            Text(text = "Wartość: ${config.wartoscParametru}", style = MaterialTheme.typography.bodySmall)
-                            Text(text = "Opis: ${config.opis ?: "Brak opisu"}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                Button(onClick = {
-                                    configToEdit = config
-                                    showConfigDialog = true
-                                }, colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)) {
-                                    Text("Edytuj")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (showConfigDialog && configToEdit != null) {
-        ConfigDialog(
-            config = configToEdit,
-            onDismiss = { showConfigDialog = false; configToEdit = null },
-            onConfirm = {
-                showConfigDialog = false
-                configToEdit = null
-                refreshConfigs()
-            }
-        )
-    }
-}
-
-@Composable
-fun ConfigDialog(
-    config: KonfiguracijaDTO?,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    val context = LocalContext.current
-    var wartosc by remember { mutableStateOf(config?.wartoscParametru ?: "") }
-    val scope = rememberCoroutineScope()
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Edytuj: ${config?.nazwaParametru ?: "Konfiguracja"}") },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(text = "Opis: ${config?.opis ?: "Brak"}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = wartosc,
-                    onValueChange = { wartosc = it },
-                    label = { Text("Wartość") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = {
-                scope.launch {
-                    if (config != null) {
-                        val updated = config.copy(wartoscParametru = wartosc)
-                        val result = ApiConnector.edytujKonfiguracje(config.id ?: 0, updated)
-                        if (result.first != null) {
-                            Toast.makeText(context, "Zapisano", Toast.LENGTH_SHORT).show()
-                            onConfirm()
-                        } else {
-                            Toast.makeText(context, "Błąd: ${result.second}", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }
-            }, colors = ButtonDefaults.buttonColors(containerColor = DeepBurgundy)) {
-                Text("Zapisz")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Anuluj") }
-        }
-    )
 }
 
 @Composable

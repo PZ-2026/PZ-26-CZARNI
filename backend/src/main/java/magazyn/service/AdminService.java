@@ -427,6 +427,44 @@ public class AdminService {
         return konwertujStanMagazynuNaDTO(zaktualizowany);
     }
 
+    /**
+     * Utwórz nowy produkt wraz z wpisem w stanie magazynu
+     */
+    @Transactional
+    public StanMagazynuDTO utworzStanMagazynu(StanMagazynuDTO dto) {
+        if (dto.getIlosc() == null) {
+            throw new IllegalArgumentException("Ilość jest wymagana");
+        }
+
+        Produkt produkt;
+        if (dto.getIdProduktu() != null) {
+            produkt = produktRepository.findById(dto.getIdProduktu())
+                    .orElseThrow(() -> new IllegalArgumentException("Produkt o podanym ID nie istnieje"));
+            if (stanMagazynuRepository.findByProdukt_Id(produkt.getId()).isPresent()) {
+                throw new IllegalArgumentException("Stan magazynu dla tego produktu już istnieje");
+            }
+        } else {
+            if (dto.getNazwaProduktu() == null || dto.getNazwaProduktu().isBlank()) {
+                throw new IllegalArgumentException("Nazwa produktu jest wymagana");
+            }
+            if (dto.getCenaProduktu() == null) {
+                throw new IllegalArgumentException("Cena produktu jest wymagana");
+            }
+            produkt = new Produkt();
+            produkt.setNazwaProduktu(dto.getNazwaProduktu());
+            produkt.setCena(dto.getCenaProduktu());
+            produkt.setJednostka("szt.");
+            produkt.setStrefa("strefa_A");
+            produkt = produktRepository.save(produkt);
+        }
+
+        StanMagazynu stanMagazynu = new StanMagazynu();
+        stanMagazynu.setProdukt(produkt);
+        stanMagazynu.setIlosc(dto.getIlosc());
+        StanMagazynu zapisanyStan = stanMagazynuRepository.save(stanMagazynu);
+        return konwertujStanMagazynuNaDTO(zapisanyStan);
+    }
+
     // ============ PANEL ADMINISTRATORA / DASHBOARD ============
 
     /**

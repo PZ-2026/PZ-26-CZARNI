@@ -100,6 +100,21 @@ object ApiConnector {
         } catch (e: Exception) { null }
     }
 
+    suspend fun pobierzHistorieFinansowa(dataPoczatek: String, dataKoniec: String): List<DaneFinansoweDTO>? {
+        return try {
+            val response = RetrofitInstance.adminApi.getFinancialHistory(dataPoczatek, dataKoniec)
+            if (response.isSuccessful) response.body() else null
+        } catch (e: Exception) { null }
+    }
+
+    suspend fun utworzStanMagazynu(stan: StanMagazynuDTO): Pair<StanMagazynuDTO?, String?> {
+        return try {
+            val response = RetrofitInstance.adminApi.createStanMagazynu(stan)
+            if (response.isSuccessful) Pair(response.body(), null)
+            else Pair(null, response.errorBody()?.string() ?: "Błąd serwera")
+        } catch (e: Exception) { Pair(null, e.message) }
+    }
+
     suspend fun pobierzWszystkoKonfiguracje(): List<KonfiguracijaDTO>? {
         return try {
             val response = RetrofitInstance.adminApi.getAllConfiguration()
@@ -151,6 +166,10 @@ object ApiConnector {
             if (response.isSuccessful) Pair(response.body(), null)
             else Pair(null, response.errorBody()?.string() ?: "Błąd serwera")
         } catch (e: Exception) { Pair(null, e.message) }
+    }
+
+    suspend fun usunStanMagazynu(id: Int): Boolean {
+        return try { RetrofitInstance.adminApi.deleteStanMagazynu(id).isSuccessful } catch (e: Exception) { false }
     }
 
     // ============ ZAMÓWIENIA (dla panelu/admina) ============

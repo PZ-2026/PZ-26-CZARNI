@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 
@@ -175,10 +176,13 @@ public class AdminController {
      */
     @GetMapping("/financial/report")
     public ResponseEntity<?> pobierzRaportFinansowy(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataPoczatek,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataKoniec) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataPoczatek,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataKoniec) {
         try {
-            RaportFinansowyDTO raport = adminService.pobierzRaportFinansowy(dataPoczatek, dataKoniec);
+            YearMonth currentMonth = YearMonth.now();
+            LocalDateTime poczatek = dataPoczatek != null ? dataPoczatek : currentMonth.atDay(1).atStartOfDay();
+            LocalDateTime koniec = dataKoniec != null ? dataKoniec : currentMonth.atEndOfMonth().atTime(23, 59, 59);
+            RaportFinansowyDTO raport = adminService.pobierzRaportFinansowy(poczatek, koniec);
             return ResponseEntity.ok(raport);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
@@ -423,6 +427,21 @@ public class AdminController {
         try {
             List<StanMagazynuDTO> stan = adminService.pobierzCalyStanMagazynu();
             return ResponseEntity.ok(stan);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+        }
+    }
+
+    /**
+     * POST /api/admin/magazyn - Utwórz nowy produkt w magazynie
+     */
+    @PostMapping("/magazyn")
+    public ResponseEntity<?> utworzStanMagazynu(@Valid @RequestBody StanMagazynuDTO dto) {
+        try {
+            StanMagazynuDTO nowyStan = adminService.utworzStanMagazynu(dto);
+            return ResponseEntity.ok(nowyStan);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body("Błąd: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
         }

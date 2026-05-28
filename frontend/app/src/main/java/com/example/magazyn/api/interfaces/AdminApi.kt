@@ -72,9 +72,18 @@ interface AdminApi {
     @GET("api/admin/magazyn")
     suspend fun getAllStanMagazynu(): Response<List<StanMagazynuDTO>>
 
+    @POST("api/admin/magazyn")
+    suspend fun createStanMagazynu(@Body stan: StanMagazynuDTO): Response<StanMagazynuDTO>
+
     @GET("api/admin/magazyn/produkt/{idProduktu}")
     suspend fun getStanProduktu(@Path("idProduktu") idProduktu: Int): Response<StanMagazynuDTO>
 
     @PUT("api/admin/magazyn/{id}")
     suspend fun updateStanMagazynu(@Path("id") id: Int, @Body stan: StanMagazynuDTO): Response<StanMagazynuDTO>
+
+    @DELETE("api/admin/magazyn/{id}")
+    suspend fun deleteStanMagazynu(@Path("id") id: Int): Response<Unit>
+
+    @GET("api/admin/financial/history")
+    suspend fun getFinancialHistory(@Query("dataPoczatek") dataPoczatek: String, @Query("dataKoniec") dataKoniec: String): Response<List<DaneFinansoweDTO>>
 }
