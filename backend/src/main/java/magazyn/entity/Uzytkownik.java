@@ -5,6 +5,10 @@ import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Encja reprezentująca użytkownika systemu.
+ * Zawiera dane osobowe, kontaktowe oraz informacje o roli i firmie.
+ */
 @Getter
 @Setter
 @Entity

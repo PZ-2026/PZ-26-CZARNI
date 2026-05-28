@@ -5,6 +5,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Obiekt DTO zawierający szczegółowe informacje o pozycji zamówienia.
+ * Wykorzystywany do wyświetlania listy produktów w widoku szczegółów zamówienia.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

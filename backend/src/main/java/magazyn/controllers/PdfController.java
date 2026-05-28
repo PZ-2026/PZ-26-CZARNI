@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Kontroler odpowiedzialny za generowanie i pobieranie raportów w formacie PDF.
+ */
 @RestController
 @RequestMapping("/api/raporty")
 public class PdfController {
@@ -16,6 +19,12 @@ public class PdfController {
     @Autowired
     private ZamowienieRepository zamowienieRepository;
 
+    /**
+     * Endpoint testowy do sprawdzenia danych zamówienia przed generowaniem PDF.
+     *
+     * @param id identyfikator zamówienia
+     * @return dane zamówienia lub status 404
+     */
     @GetMapping("/test-data/{id}")
     public ResponseEntity<?> testOrderData(@PathVariable Integer id) {
         return zamowienieRepository.findByIdWithProducts(id)
@@ -26,10 +35,16 @@ public class PdfController {
     @Autowired
     private PdfGeneratorService pdfService;
 
+    /**
+     * Generuje i zwraca fakturę w formacie PDF dla konkretnego zamówienia.
+     *
+     * @param id identyfikator zamówienia
+     * @return dokument PDF jako tablica bajtów w odpowiedzi HTTP
+     */
     @GetMapping("/pobierz/{id}")
     public ResponseEntity<byte[]> pobierzFakture(@PathVariable Integer id) {
         try {
-            // Wywołujemy Twój poprawiony serwis
+            // Wywołujemy serwis generujący PDF
             byte[] pdfContents = pdfService.generateInvoice(id);
 
             HttpHeaders headers = new HttpHeaders();

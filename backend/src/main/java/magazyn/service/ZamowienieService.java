@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Serwis obsługujący operacje na zamówieniach zaopatrzeniowych.
+ */
 @Service
 public class ZamowienieService {
 
@@ -27,6 +30,12 @@ public class ZamowienieService {
     @Autowired
     private ProduktRepository produktRepository;
 
+    /**
+     * Składa nowe zamówienie u dostawcy.
+     * Tworzy rekord zamówienia oraz powiązane z nim pozycje w tabeli łączącej.
+     *
+     * @param request obiekt zawierający dane zamówienia (ID dostawcy, ID użytkownika, lista produktów)
+     */
     @Transactional
     public void zlozZamowienie(NoweZamowienieRequest request) {
         // tworzenie nowego zamówienie
@@ -51,6 +60,14 @@ public class ZamowienieService {
             }
         }
     }
+
+    /**
+     * Pobiera listę pozycji dla konkretnego zamówienia zaopatrzeniowego.
+     * Wykonuje zoptymalizowane zapytania, aby pobrać nazwy produktów.
+     *
+     * @param idZamowienia identyfikator zamówienia
+     * @return lista pozycji zamówienia z nazwami produktów
+     */
     public List<PozycjaZamowieniaResponse> getPozycjeDlaZamowienia(Integer idZamowienia) {
         // 1. Pobierz pozycje z tabeli łączącej
         List<ZamowienieProduktyDostawcy> pozycje = pozycjeRepo.findByIdZamowienia(idZamowienia);
@@ -67,7 +84,7 @@ public class ZamowienieService {
         Map<Integer, Produkt> produktMap = produkty.stream()
                 .collect(Collectors.toMap(Produkt::getId, p -> p));
 
-        // 3. Budowanie odpowiedzi z logowaniem (Dobre praktyki - Osoba 5)
+        // 3. Budowanie odpowiedzi
         return pozycje.stream().map(p -> {
             Produkt prod = produktMap.get(p.getIdProduktu());
             String nazwa;

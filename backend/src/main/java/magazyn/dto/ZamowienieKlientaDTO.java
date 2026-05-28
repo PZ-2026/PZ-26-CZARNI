@@ -8,6 +8,9 @@ import lombok.Setter;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+/**
+ * Obiekt DTO przesyłający szczegółowe dane o zamówieniu klienta do widoku magazyniera.
+ */
 @Getter
 @Setter
 @AllArgsConstructor
@@ -20,6 +23,9 @@ public class ZamowienieKlientaDTO {
     private Integer status;
     private List<PozycjaZamowieniaDTO> produkty;
 
+    /**
+     * DTO reprezentujące pojedynczą pozycję w zamówieniu klienta.
+     */
     @Getter
     @Setter
     @AllArgsConstructor

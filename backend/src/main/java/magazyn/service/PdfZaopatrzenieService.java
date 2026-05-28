@@ -26,7 +26,11 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 
-@Slf4j // Adnotacja z Twojego referatu - automatyczny logger SLF4J
+/**
+ * Serwis odpowiedzialny za generowanie dokumentów PDF dla zamówień zaopatrzeniowych.
+ * Umożliwia stworzenie oficjalnego potwierdzenia zamówienia wysyłanego do dostawcy.
+ */
+@Slf4j
 @Service
 public class PdfZaopatrzenieService {
 
@@ -39,6 +43,14 @@ public class PdfZaopatrzenieService {
     @Autowired
     private ProduktRepository produktRepository;
 
+    /**
+     * Generuje dokument PDF dla zamówienia zaopatrzeniowego.
+     * Dokument zawiera dane zamawiającego, dostawcy oraz listę zamówionych produktów z ilościami.
+     *
+     * @param idZamowienia identyfikator zamówienia zaopatrzeniowego
+     * @return tablica bajtów zawierająca wygenerowany plik PDF
+     * @throws Exception w przypadku błędów podczas generowania PDF lub braku danych w bazie
+     */
     public byte[] generatePurchaseOrderPdf(Integer idZamowienia) throws Exception {
         log.info("Rozpoczęto generowanie PDF dla zamówienia zaopatrzeniowego nr: {}", idZamowienia);
 
@@ -104,11 +116,10 @@ public class PdfZaopatrzenieService {
         for (ZamowienieProduktyDostawcy pozycja : pozycje) {
             table.addCell(new Cell().add(new Paragraph(String.valueOf(lp++)).setFont(font)));
 
-            // Pobieranie nazwy produktu z ProduktRepository (Opcja B)
+            // Pobieranie nazwy produktu
             String nazwaProduktu = produktRepository.findById(pozycja.getIdProduktu())
                     .map(p -> p.getNazwaProduktu())
                     .orElseGet(() -> {
-                        // Logujemy błąd spójności danych, ale pozwalamy wygenerować PDF
                         log.warn("Produkt o ID {} nie istnieje w bazie, a występuje w zamówieniu {}",
                                 pozycja.getIdProduktu(), idZamowienia);
                         return "Nieznany produkt (ID: " + pozycja.getIdProduktu() + ")";

@@ -22,6 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Kontroler obsługujący zamówienia klientów oraz zaopatrzeniowców.
+ * Zarządza historią zamówień, składaniem nowych zamówień oraz zmianą ich statusu.
+ */
 @RestController
 @RequestMapping("/api/zamowienia")
 public class ZamowieniaController {
@@ -44,15 +48,36 @@ public class ZamowieniaController {
     @Autowired
     private ZamowienieService zamowienieService;
 
+    /**
+     * Pobiera historię zamówień dla konkretnego użytkownika (zaopatrzeniowca).
+     *
+     * @param uzytkownikId identyfikator użytkownika
+     * @return lista obiektów DTO reprezentujących historię zamówień
+     */
     @GetMapping("/historia/{uzytkownikId}")
     public List<HistoriaZamowieniaDTO> getHistoria(@PathVariable("uzytkownikId") Integer uzytkownikId) {
         return repository.findHistoriaByUzytkownik(uzytkownikId);
     }
+
+    /**
+     * Pobiera historię zamówień dla konkretnego klienta.
+     *
+     * @param uzytkownikId identyfikator klienta
+     * @return lista obiektów DTO reprezentujących historię zamówień klienta
+     */
     @GetMapping("historiaklient/{uzytkownikId}")
     public List<HistoriaZamowieniaDTO> getHistoriaKlient(@PathVariable Integer uzytkownikId) {
         return historiaKlientaRepository.findHistoriaKlienta(uzytkownikId);
     }
 
+    /**
+     * Zmienia status zamówienia zaopatrzeniowca. Jeśli status zmienia się na skompletowany (2),
+     * stany magazynowe produktów z tego zamówienia zostają zwiększone.
+     *
+     * @param id identyfikator zamówienia
+     * @param nowyStatus nowy status do ustawienia
+     * @return odpowiedź HTTP OK lub NOT FOUND
+     */
     @PutMapping("/{id}/status")
     @Transactional
     public ResponseEntity<?> zmienStatusZamowienia(
@@ -94,6 +119,12 @@ public class ZamowieniaController {
         }
     }
 
+    /**
+     * Składa nowe zamówienie przez klienta.
+     *
+     * @param request obiekt zawierający dane nowego zamówienia
+     * @return odpowiedź HTTP z informacją o powodzeniu lub błędzie (np. brak towaru)
+     */
     @PostMapping("/klient")
     public ResponseEntity<String> zlozZamowienie(@RequestBody NoweZamowienieRequest request) {
         try {
@@ -106,6 +137,12 @@ public class ZamowieniaController {
         }
     }
 
+    /**
+     * Pobiera listę pozycji dla konkretnego zamówienia.
+     *
+     * @param id identyfikator zamówienia
+     * @return odpowiedź HTTP z listą pozycji zamówienia
+     */
     @GetMapping("/{id}/pozycje")
     public ResponseEntity<List<PozycjaZamowieniaResponse>> getPozycje(@PathVariable Integer id) {
         return ResponseEntity.ok(zamowienieService.getPozycjeDlaZamowienia(id));

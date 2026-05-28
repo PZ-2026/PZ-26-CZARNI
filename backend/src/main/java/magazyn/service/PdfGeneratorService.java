@@ -25,13 +25,24 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 
-
+/**
+ * Serwis odpowiedzialny za generowanie dokumentów PDF (faktur) dla klientów.
+ * Wykorzystuje bibliotekę iText7 do tworzenia profesjonalnych zestawień sprzedaży.
+ */
 @Service
 public class PdfGeneratorService {
 
     @Autowired
     private ZamowienieRepository zamowienieRepository;
 
+    /**
+     * Generuje fakturę VAT w formacie PDF dla określonego zamówienia klienta.
+     * Dokument zawiera dane sprzedawcy, nabywcy, listę produktów z cenami netto/brutto oraz podsumowanie.
+     *
+     * @param idZamowienia identyfikator zamówienia, dla którego ma zostać wystawiona faktura
+     * @return tablica bajtów zawierająca wygenerowany plik PDF
+     * @throws Exception w przypadku błędów podczas generowania dokumentu lub braku zasobów (np. czcionek)
+     */
     public byte[] generateInvoice(Integer idZamowienia) throws Exception {
         // 1. Pobranie danych z bazy
         ZamowienieKlienta zamowienie = zamowienieRepository.findByIdWithProducts(idZamowienia)

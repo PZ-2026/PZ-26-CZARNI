@@ -6,6 +6,10 @@ import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
 
+/**
+ * Encja reprezentująca pozycję w zamówieniu klienta.
+ * Łączy zamówienie z konkretnym produktem oraz przechowuje ilość i cenę z dnia zakupu.
+ */
 @Getter
 @Setter
 @Entity

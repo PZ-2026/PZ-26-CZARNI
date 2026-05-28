@@ -6,6 +6,10 @@ import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
 
+/**
+ * Encja reprezentująca aktualny stan magazynowy konkretnego produktu.
+ * Przechowuje informację o dostępnej ilości towaru.
+ */
 @Getter
 @Setter
 @Entity
