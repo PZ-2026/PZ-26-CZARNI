@@ -52,4 +52,7 @@ public class Uzytkownik {
     @jakarta.validation.constraints.Pattern(regexp = "^[0-9]{10}$", message = "NIP musi składać się z dokładnie 10 cyfr")
     @Column(length = 10)
     private String nip;
+
+    @Column(nullable = false)
+    private Boolean zablokowany = false;
 }

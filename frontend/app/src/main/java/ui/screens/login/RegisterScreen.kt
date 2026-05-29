@@ -24,6 +24,7 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Unit) {
     var imie by remember { mutableStateOf("") }
     var nazwisko by remember { mutableStateOf("") }
     var telefon by remember { mutableStateOf("") }
+    var telefonError by remember { mutableStateOf<String?>(null) }
     var email by remember { mutableStateOf("") }
     var haslo by remember { mutableStateOf("") }
     var nazwaFirmy by remember { mutableStateOf("") }
@@ -81,11 +82,21 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Unit) {
 
             OutlinedTextField(
                 value = telefon,
-                onValueChange = { telefon = it },
+                onValueChange = {
+                    telefon = it
+                    val digits = it.filter { c -> c.isDigit() }
+                    telefonError = if (digits.isNotBlank() && digits.length != 9) {
+                        "Telefon powinien mieć dokładnie 9 cyfr"
+                    } else null
+                },
                 label = { Text("Telefon") },
                 modifier = commonModifier,
+                isError = telefonError != null,
                 shape = RoundedCornerShape(16.dp)
             )
+            if (telefonError != null) {
+                Text(text = telefonError ?: "", color = Color.Red, modifier = Modifier.padding(start = 16.dp, top = 4.dp))
+            }
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
@@ -144,6 +155,10 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Unit) {
                     )
 
                     scope.launch {
+                        if (telefonError != null) {
+                            errorMessage = telefonError
+                            return@launch
+                        }
                         isLoading = true
                         errorMessage = null
 

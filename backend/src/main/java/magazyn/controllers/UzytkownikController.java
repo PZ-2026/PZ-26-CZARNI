@@ -122,18 +122,26 @@ public class UzytkownikController {
      * @return zaktualizowana encja użytkownika lub status 404
      */
     @PutMapping("/{id}")
-    public ResponseEntity<Uzytkownik> updateUzytkownik(@PathVariable Integer id, @RequestBody Uzytkownik dane) {
+    public ResponseEntity<?> updateUzytkownik(@PathVariable Integer id, @RequestBody Uzytkownik dane) {
         return uzytkownikRepository.findById(id)
                 .map(uzytkownik -> {
-                    // Przepisujemy dane z DTO/Body do obiektu encji
+                    if (dane.getEmail() != null && !dane.getEmail().equals(uzytkownik.getEmail())) {
+                        if (uzytkownikRepository.findByEmail(dane.getEmail()).isPresent()) {
+                            return ResponseEntity.status(400).body("Podany email jest zajęty");
+                        }
+                        uzytkownik.setEmail(dane.getEmail());
+                    }
+
                     uzytkownik.setImie(dane.getImie());
                     uzytkownik.setNazwisko(dane.getNazwisko());
-                    uzytkownik.setEmail(dane.getEmail());
                     uzytkownik.setTelefon(dane.getTelefon());
                     uzytkownik.setFirma(dane.getFirma());
                     uzytkownik.setNip(dane.getNip());
 
-                    // Zapisujemy w Postgresie
+                    if (dane.getHaslo() != null && !dane.getHaslo().isBlank()) {
+                        uzytkownik.setHaslo(dane.getHaslo());
+                    }
+
                     Uzytkownik zapisany = uzytkownikRepository.save(uzytkownik);
                     return ResponseEntity.ok(zapisany);
                 })

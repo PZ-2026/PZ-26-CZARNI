@@ -1,17 +1,66 @@
+## IDE Configuration
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
+.idea/
+*.swp
+*.swo
+*~
+.vscode/
+
+## Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+## Build artifacts
+build/
+.build/
+dist/
+bin/
+out/
+target/
+
+## Android specific
+local.properties
 /captures
 .externalNativeBuild
 .cxx
-application.properties
-local.properties
+*.apk
+*.aar
+*.aab
+lint-baseline.xml
+
+## Java
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+## OS
+.DS_Store
+Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+## Environment
+.env
+.env.local
+*.properties
 /backend/src/main/resources/application.properties
+!/gradle/wrapper/gradle-wrapper.jar
+
+## Generated files
+*.log
+.classpath
+.factorypath
+.project
+.settings/
+bin/
+tmp/
+*.tmp
