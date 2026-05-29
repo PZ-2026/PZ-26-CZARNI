@@ -11,6 +11,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 
+/**
+ * Kontroler obsługujący operacje na użytkownikach, w tym logowanie, rejestrację i zarządzanie profilem.
+ */
 @RestController
 @RequestMapping("/api/uzytkownicy")
 public class UzytkownikController {
@@ -21,7 +24,12 @@ public class UzytkownikController {
     @Autowired
     private SesjaRepository sesjaRepository;
 
-
+    /**
+     * Pobiera dane profilowe konkretnego użytkownika.
+     *
+     * @param id identyfikator użytkownika
+     * @return encja użytkownika lub status 404
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Uzytkownik> getProfil(@PathVariable Integer id) {
         return uzytkownikRepository.findById(id)
@@ -29,6 +37,12 @@ public class UzytkownikController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * Przeprowadza proces logowania użytkownika. Sprawdza poprawność danych i generuje token sesji.
+     *
+     * @param credentials mapa zawierająca login (email) i hasło
+     * @return mapa z danymi użytkownika i tokenem lub błąd autoryzacji
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody java.util.Map<String, String> credentials) {
         String login = credentials.get("login");
@@ -55,6 +69,13 @@ public class UzytkownikController {
                 .orElse(ResponseEntity.status(404).body("Błędne dane logowania."));
     }
 
+    /**
+     * Rejestruje nowego użytkownika w systemie.
+     *
+     * @param nowyUzytkownik obiekt użytkownika przesyłany w ciele żądania
+     * @param result wynik walidacji pól użytkownika
+     * @return zapisany użytkownik lub informacja o błędzie walidacji/zajętym emailu
+     */
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody Uzytkownik nowyUzytkownik, BindingResult result) {
         try {
@@ -73,6 +94,12 @@ public class UzytkownikController {
         }
     }
 
+    /**
+     * Pobiera dane aktualnie zalogowanego użytkownika na podstawie tokenu sesji.
+     *
+     * @param token token sesji przekazywany w nagłówku Authorization
+     * @return dane użytkownika lub błąd 401 jeśli sesja wygasła lub token jest niepoprawny
+     */
     @GetMapping("/me")
     public ResponseEntity<?> getMe(@RequestHeader("Authorization") String token) {
         String cleanToken = token.replace("Bearer ", "");
@@ -87,6 +114,13 @@ public class UzytkownikController {
                 .orElse(ResponseEntity.status(401).body("Nieprawidłowy token"));
     }
 
+    /**
+     * Aktualizuje dane istniejącego użytkownika.
+     *
+     * @param id identyfikator użytkownika
+     * @param dane nowe dane użytkownika
+     * @return zaktualizowana encja użytkownika lub status 404
+     */
     @PutMapping("/{id}")
     public ResponseEntity<Uzytkownik> updateUzytkownik(@PathVariable Integer id, @RequestBody Uzytkownik dane) {
         return uzytkownikRepository.findById(id)

@@ -12,11 +12,24 @@ import org.springframework.stereotype.Service;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 
+/**
+ * Serwis obsługujący proces składania zamówień przez klientów.
+ * Zarządza przydzielaniem zamówień do magazynierów oraz aktualizacją stanów magazynowych.
+ */
 @Service
 public class ZamowienieKlientService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    /**
+     * Składa nowe zamówienie klienta. Proces obejmuje:
+     * 1. Znalezienie magazyniera z najmniejszą liczbą aktywnych zadań.
+     * 2. Utworzenie nagłówka zamówienia.
+     * 3. Walidację stanów magazynowych i dodanie pozycji zamówienia z "zamrożoną" ceną z dnia zakupu.
+     *
+     * @param request obiekt zawierający dane zamówienia (ID klienta, lista produktów z ilościami)
+     * @throws RuntimeException jeśli brakuje towaru w magazynie
+     */
     @Transactional
     public void zlozZamowienie(NoweZamowienieRequest request) {
         // 1. Znajdź magazyniera z najmniejszą ilością pracy
@@ -35,7 +48,6 @@ public class ZamowienieKlientService {
 
         // 2. Wstawianie głównego zamówienia
         final Integer finalMagazynierId = idWybranegoMagazyniera;
-        // 2. Wstawianie głównego zamówienia - TERAZ ZGODNIE ZE ZDJĘCIEM
         String sqlZamowienie = "INSERT INTO zamowienia_klienci (id_klienta, id_magazyniera, data, status) " +
                 "VALUES (?, ?, NOW(), 0) RETURNING id";
 
@@ -47,16 +59,6 @@ public class ZamowienieKlientService {
         );
 
         System.out.println("SUKCES! Nowe ID zamówienia: " + idNowegoZamowienia);
-
-        /*for (NoweZamowienieRequest.PozycjaZamowienia poz: request.getPozycje()) {
-            int zmienioneWiersze = jdbcTemplate.update("UPDATE stan_magazynu SET ilosc = ilosc - ? WHERE id_produktu = ? AND ilosc >= ?", poz.getIlosc(), poz.getIdProduktu(), poz.getIlosc());
-            if (zmienioneWiersze == 0) {
-                System.out.println("text");
-                throw new RuntimeException("Brak wystarczającej ilości produktu o ID: " + poz.getIdProduktu());
-            }
-            jdbcTemplate.update("INSERT INTO zamowienia_produkty_klienci_laczaca (id_zamowienia, id_produktu, ilosc, cena_w_dniu_zakupu) VALUES (?, ?, ?, ?)", idNowegoZamowienia, poz.getIdProduktu(), poz.getIlosc(), 0.0);
-
-        }*/
 
         for (NoweZamowienieRequest.PozycjaZamowienia poz : request.getPozycje()) {
             // 1. Pobierz aktualną cenę produktu z bazy

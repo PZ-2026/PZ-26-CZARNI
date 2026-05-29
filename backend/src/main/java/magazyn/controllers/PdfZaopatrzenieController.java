@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Kontroler odpowiedzialny za generowanie raportów PDF dla zamówień zaopatrzeniowych.
+ */
 @RestController
 @RequestMapping("/api/raporty/zaopatrzenie")
 public class PdfZaopatrzenieController {
@@ -15,6 +18,12 @@ public class PdfZaopatrzenieController {
     @Autowired
     private PdfZaopatrzenieService pdfService;
 
+    /**
+     * Generuje i udostępnia do pobrania plik PDF z zamówieniem zaopatrzeniowym.
+     *
+     * @param id identyfikator zamówienia zaopatrzeniowego
+     * @return dokument PDF jako tablica bajtów z nagłówkiem wymuszającym pobranie pliku
+     */
     @GetMapping("/pobierz/{id}")
     public ResponseEntity<byte[]> pobierzPdfZamowienia(@PathVariable Integer id) {
         try {

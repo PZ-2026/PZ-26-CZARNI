@@ -7,6 +7,10 @@ import lombok.Setter;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+/**
+ * Encja reprezentująca zamówienie złożone przez klienta.
+ * Zawiera informacje o dacie, kliencie, przypisanym magazynierze oraz statusie zamówienia.
+ */
 @Getter
 @Setter
 @Entity

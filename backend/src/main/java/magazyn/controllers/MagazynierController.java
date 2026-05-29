@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Kontroler obsługujący operacje wykonywane przez magazyniera.
+ */
 @RestController
 @RequestMapping("/api/magazynier")
 public class MagazynierController {
@@ -22,12 +25,25 @@ public class MagazynierController {
     @Autowired
     private ZamowienieProduktyKlienciRepository zamowienieProduktyKlienciRepository;
 
+    /**
+     * Pobiera listę zamówień przypisanych do konkretnego magazyniera, które nie mają jeszcze statusu skompletowanego.
+     *
+     * @param magazynierId identyfikator magazyniera
+     * @return lista zamówień do spakowania w formacie DTO
+     */
     @GetMapping("/zamowienia/{magazynierId}")
     public List<ZamowienieKlientaDTO> getZamowieniaDoSpakowania(@PathVariable Integer magazynierId) {
         List<ZamowienieKlienta> zamowienia = zamowienieKlientaRepository.findByMagazynierIdAndStatusNot(magazynierId, 2);
         return zamowienia.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
+    /**
+     * Zmienia status konkretnego zamówienia.
+     *
+     * @param id identyfikator zamówienia
+     * @param status nowy status zamówienia (np. 1 - w pakowaniu, 2 - skompletowane)
+     * @return odpowiedź HTTP OK w przypadku sukcesu lub NOT FOUND w przypadku braku zamówienia
+     */
     @PutMapping("/zamowienia/{id}/status")
     public ResponseEntity<?> zmienStatus(@PathVariable Integer id, @RequestParam Integer status) {
         return zamowienieKlientaRepository.findById(id).map(z -> {
@@ -37,6 +53,13 @@ public class MagazynierController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * Pomocnicza metoda do konwersji encji zamówienia na obiekt DTO przesyłany do frontendu.
+     * Pobiera pozycje zamówienia i przypisuje im strefy magazynowe.
+     *
+     * @param z encja zamówienia klienta
+     * @return obiekt DTO zamówienia
+     */
     private ZamowienieKlientaDTO convertToDTO(ZamowienieKlienta z) {
         List<ZamowienieProduktyKlienci> pozycje = zamowienieProduktyKlienciRepository.findByZamowienieId(z.getId());
         List<ZamowienieKlientaDTO.PozycjaZamowieniaDTO> produkty = pozycje.stream()

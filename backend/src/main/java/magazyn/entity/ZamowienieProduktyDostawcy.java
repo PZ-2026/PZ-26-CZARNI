@@ -4,6 +4,10 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Encja reprezentująca pozycję w zamówieniu zaopatrzeniowym.
+ * Łączy zamówienie zaopatrzeniowca z produktem i przechowuje zamówioną ilość.
+ */
 @Getter
 @Setter
 @Entity

@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Kontroler obsługujący procesy zaopatrzenia magazynu.
+ */
 @RestController
 @RequestMapping("/api/zamowienia/zaopatrzenie")
 public class ZamowieniaZaopatrzenieController {
@@ -16,7 +19,12 @@ public class ZamowieniaZaopatrzenieController {
     @Autowired
     private ZamowienieService zamowienieService;
 
-    // Złożenie nowego zamówienia
+    /**
+     * Składa nowe zamówienie zaopatrzeniowe u dostawcy.
+     *
+     * @param request obiekt zawierający dane zamówienia (dostawca, uzytkownik, lista produktów)
+     * @return informacja o pomyślnym złożeniu zamówienia
+     */
     @PostMapping
     public ResponseEntity<String> dodajZamowienie(@RequestBody NoweZamowienieRequest request) {
         zamowienieService.zlozZamowienie(request);

@@ -5,6 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import java.time.OffsetDateTime;
 
+/**
+ * Encja reprezentująca zamówienie zaopatrzeniowe złożone u dostawcy.
+ * Przechowuje informacje o dacie zamówienia, dostawcy, użytkowniku składającym oraz statusie.
+ */
 @Getter
 @Setter
 @Entity

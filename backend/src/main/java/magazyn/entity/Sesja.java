@@ -5,6 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
+/**
+ * Encja reprezentująca sesję użytkownika w systemie.
+ * Przechowuje token autoryzacyjny oraz informacje o czasie ważności sesji.
+ */
 @Entity
 @Table(name = "sesje")
 @Getter @Setter
@@ -27,10 +31,18 @@ public class Sesja {
     @Column(nullable = false)
     private LocalDateTime dataWygasniecia;
 
-    // Konstruktor domyślny dla Hibernate
+    /**
+     * Konstruktor domyślny wymagany przez JPA/Hibernate.
+     */
     public Sesja() {}
 
-    // Pomocniczy konstruktor do tworzenia nowej sesji
+    /**
+     * Konstruktor pomocniczy do tworzenia nowej sesji dla użytkownika.
+     *
+     * @param token unikalny token sesji
+     * @param uzytkownik użytkownik, do którego przypisana jest sesja
+     * @param minWaznosci czas ważności sesji w minutach
+     */
     public Sesja(String token, Uzytkownik uzytkownik, int minWaznosci) {
         this.token = token;
         this.uzytkownik = uzytkownik;
