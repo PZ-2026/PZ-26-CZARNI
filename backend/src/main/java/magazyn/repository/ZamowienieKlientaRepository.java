@@ -27,4 +27,6 @@ public interface ZamowienieKlientaRepository extends JpaRepository<ZamowienieKli
 
     @Query("SELECT COUNT(z) FROM ZamowienieKlienta z WHERE z.status = 1")
     Integer countZamowieniaDoRealizacji();
+
+    List<ZamowienieKlienta> findByMagazynierIdAndStatusNot(Integer magazynierId, Integer status);
 }
