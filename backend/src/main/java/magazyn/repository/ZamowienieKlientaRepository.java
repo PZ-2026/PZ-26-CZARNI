@@ -7,6 +7,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+* Wyszukuje zamówienia przypisane do konkretnego magazyniera, o statusie innym niż podany.
+* Wykorzystywane do pobierania listy zadań "do spakowania".
+*
+* @param magazynierId identyfikator magazyniera
+* @param status status, który ma zostać wykluczony (zazwyczaj status 2 - skompletowane)
+* @return lista zamówień spełniających kryteria
+*/
 @Repository
 public interface ZamowienieKlientaRepository extends JpaRepository<ZamowienieKlienta, Integer> {
 

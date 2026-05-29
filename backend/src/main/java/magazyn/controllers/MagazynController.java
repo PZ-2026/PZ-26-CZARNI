@@ -9,6 +9,9 @@ import magazyn.repository.ProduktRepository;
 
 import java.util.List;
 
+/**
+ * Kontroler odpowiedzialny za operacje związane z magazynem.
+ */
 @RestController
 @RequestMapping("/api/magazyn")
 public class MagazynController {
@@ -16,6 +19,11 @@ public class MagazynController {
     @Autowired
     private ProduktRepository produktRepository;
 
+    /**
+     * Pobiera listę wszystkich produktów dostępnych w magazynie.
+     *
+     * @return Lista produktów.
+     */
     @GetMapping("/produkty")
     public List<Produkt> getAllProducts() {
         return produktRepository.findAll();

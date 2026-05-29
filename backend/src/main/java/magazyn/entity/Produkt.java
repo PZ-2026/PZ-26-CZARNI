@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
 
+/**
+ * Encja reprezentująca produkt w magazynie.
+ */
 @Getter
 @Setter
 @Entity

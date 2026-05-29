@@ -16,7 +16,7 @@ import com.example.magazyn.api.dtos.UzytkownikDTO
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MagazynierDashboard(user: UzytkownikDTO?, onLogout: () -> Unit) {
-    val selectedItem = remember { mutableStateOf(0) }
+    val selectedItem = remember { mutableStateOf(1) } // Default to Zamówienia
     val items = listOf(
         BottomNavItem.Profil,
         BottomNavItem.Zamowienia,
@@ -76,7 +76,7 @@ fun MagazynierDashboard(user: UzytkownikDTO?, onLogout: () -> Unit) {
         Box(modifier = Modifier.padding(paddingValues)) {
             when (selectedItem.value) {
                 0 -> ProfilTab(user)
-                1 -> ZleceniaTab()
+                1 -> user?.id?.let { ZleceniaTab(it) }
                 2 -> SkanerTab()
                 3 -> MagazynTab()
             }

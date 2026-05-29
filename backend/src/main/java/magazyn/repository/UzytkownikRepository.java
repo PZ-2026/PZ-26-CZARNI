@@ -7,8 +7,17 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.List;
 
+/**
+ * Repozytorium zarządzające encjami użytkowników.
+ */
 @Repository
 public interface UzytkownikRepository extends JpaRepository<Uzytkownik, Integer> {
+    /**
+     * Wyszukuje użytkownika na podstawie adresu email.
+     *
+     * @param email adres email użytkownika
+     * @return opcjonalny obiekt użytkownika
+     */
     Optional<Uzytkownik> findByEmail(String email);
 
     List<Uzytkownik> findByRola(Integer rola);

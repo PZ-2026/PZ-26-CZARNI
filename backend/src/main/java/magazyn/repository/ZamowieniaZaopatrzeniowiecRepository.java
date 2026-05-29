@@ -8,9 +8,19 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
+/**
+ * Repozytorium obsługujące zamówienia zaopatrzeniowe.
+ */
 @Repository
 public interface ZamowieniaZaopatrzeniowiecRepository extends JpaRepository<ZamowienieZaopatrzeniowca, Integer> {
 
+    /**
+     * Pobiera historię zamówień zaopatrzeniowych dla konkretnego użytkownika.
+     * Agreguje dane o dostawcy i liczbie pozycji w zamówieniu.
+     *
+     * @param idUzytkownika identyfikator zaopatrzeniowca
+     * @return lista obiektów DTO reprezentujących historię zamówień
+     */
     @Query("SELECT new magazyn.dto.HistoriaZamowieniaDTO(z.id, z.data, d.nazwaDostawcy, z.status, COUNT(l)) " +
             "FROM ZamowienieZaopatrzeniowca z " +
             "JOIN z.dostawca d " +

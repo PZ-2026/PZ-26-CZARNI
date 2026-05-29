@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.Setter;
 import java.io.Serializable;
 
+/**
+ * Klasa reprezentująca klucz złożony dla tabeli łączącej produkty z zamówieniami klientów.
+ */
 @Getter
 @Setter
 @EqualsAndHashCode

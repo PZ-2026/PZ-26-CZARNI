@@ -21,7 +21,7 @@ class MagazynViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 // Wywołujemy nasze API przez RetrofitInstance
-                val odpowiedz = RetrofitInstance.api.getProdukty()
+                val odpowiedz = RetrofitInstance.magazynApi.getProdukty()
                 _produkty.value = odpowiedz
             } catch (e: Exception) {
                 e.printStackTrace()

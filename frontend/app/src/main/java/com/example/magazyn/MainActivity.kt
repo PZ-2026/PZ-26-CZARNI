@@ -53,14 +53,13 @@ class MainActivity : ComponentActivity() {
                         AuthTokenProvider.token = token
                         val user = ApiConnector.weryfikujSesjeNaSerwerze(token)
                         if (user != null) {
-                            currentUser = user // To wywoła recompozycję i pokaże Dashboard niżej
+                            currentUser = user
                         }
                     }
                     isCheckingSession = false
                 }
 
                 val handleLogout = {
-                    // Czyścimy token przy wylogowaniu
                     getSharedPreferences("sesja", MODE_PRIVATE).edit().clear().apply()
                     AuthTokenProvider.token = null
                     currentUser = null
@@ -83,7 +82,6 @@ class MainActivity : ComponentActivity() {
                             onNavigateToRegister = { isRegistering = true }
                         )
                     } else {
-                        // Wyświetlanie dashboardów
                         when (currentUser?.rola) {
                             RoleConstants.ADMINISTRATOR -> AdminDashboard(handleLogout, darkTheme = darkTheme, onDarkModeChange = { enabled ->
                                 darkTheme = enabled

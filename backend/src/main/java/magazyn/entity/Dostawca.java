@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Encja reprezentująca dostawcę towarów do magazynu.
+ */
 @Getter
 @Setter
 @Entity
