@@ -12,20 +12,8 @@ object AuthTokenProvider {
 }
 
 object RetrofitInstance {
-    private const val BASE_URL = "http://10.0.2.2:8080/" // lokalny adres ip komputera, powinno działać
-                                                             // dla emulatora adres to: http://10.0.2.2:8080/
-
-object RetrofitInstance {
     const val BASE_URL = "http://10.0.2.2:8080/" 
 
-    private val retrofit by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .client(client)
-            .build()
-    }
-    
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
@@ -38,13 +26,25 @@ object RetrofitInstance {
         chain.proceed(requestBuilder.build())
     }
 
-    val client = OkHttpClient.Builder()
+    private val client = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .addInterceptor(logging)
         .build()
 
+    private val retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .client(client)
+            .build()
+    }
+
     val uzytkownikApi: UzytkownikApi by lazy {
         retrofit.create(UzytkownikApi::class.java)
+    }
+
+    val adminApi: AdminApi by lazy {
+        retrofit.create(AdminApi::class.java)
     }
 
     val zamowieniaApi: ZamowieniaApi by lazy {
@@ -62,8 +62,8 @@ object RetrofitInstance {
     val magazynApi: MagazynApi by lazy {
         retrofit.create(MagazynApi::class.java)
     }
-
-    val adminApi: AdminApi by lazy {
-        retrofit.create(AdminApi::class.java)
+    
+    val magazynierApi: MagazynierApi by lazy {
+        retrofit.create(MagazynierApi::class.java)
     }
 }

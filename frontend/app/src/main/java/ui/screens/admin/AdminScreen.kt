@@ -165,7 +165,7 @@ fun UsersTab() {
             isLoading.value = true
             error.value = null
             try {
-                val result = ApiConnector.pobierzWszystkowUzytkownikow()
+                val result = ApiConnector.pobierzWszystkichUzytkownikow()
                 users.value = result
                 isLoading.value = false
             } catch (e: Exception) {

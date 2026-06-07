@@ -76,7 +76,10 @@ public class AdminController {
             return ResponseEntity.ok(zaktualizowany);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(404).body("Błąd: " + e.getMessage());
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            return ResponseEntity.status(400).body("Błąd: Dane naruszają ograniczenia bazy danych - " + e.getCause().getMessage());
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(500).body("Błąd podczas edycji użytkownika: " + e.getMessage());
         }
     }

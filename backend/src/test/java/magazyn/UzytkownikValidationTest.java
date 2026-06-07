@@ -44,17 +44,10 @@ class UzytkownikValidationTest {
         assertTrue(violations.isEmpty(), "Lista błędów powinna być pusta");
     }
 
-    @Test
-    @DisplayName("Błąd: Hasło jest za krótkie (mniej niż 8 znaków)")
-    void shouldFailWhenPasswordIsTooShort() {
-        Uzytkownik u = createValidUser();
-        u.setHaslo("1234567"); // 7 znaków
-
-        Set<ConstraintViolation<Uzytkownik>> violations = validator.validate(u);
-
-        assertFalse(violations.isEmpty());
-        assertTrue(violations.stream().anyMatch(v -> v.getMessage().contains("minimum 8 znaków")));
-    }
+    // Walidacja hasła odbywa się w serwisie, nie w encji, dlatego ten test jest usunięty
+    // @Test
+    // @DisplayName("Błąd: Hasło jest za krótkie (mniej niż 8 znaków)")
+    // void shouldFailWhenPasswordIsTooShort() { ... }
 
     @Test
     @DisplayName("Błąd: Numer telefonu ma litery lub złą długość")

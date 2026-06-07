@@ -9,7 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -97,7 +99,10 @@ public class AdminService {
         uzytkownik.setTelefon(dto.getTelefon());
         uzytkownik.setRola(dto.getRola());
         uzytkownik.setFirma(dto.getFirma());
-        uzytkownik.setNip(dto.getNip());
+        
+        // Bezpieczne ustawienie NIP - konwertuj pusty string na null
+        String nip = dto.getNip();
+        uzytkownik.setNip((nip == null || nip.trim().isEmpty()) ? null : nip.trim());
 
         if (!uzytkownik.getEmail().equals(dto.getEmail())) {
             if (uzytkownikRepository.findByEmail(dto.getEmail()).isPresent()) {
@@ -106,7 +111,10 @@ public class AdminService {
             uzytkownik.setEmail(dto.getEmail());
         }
 
-        Uzytkownik zaktualizowany = uzytkownikRepository.save(uzytkownik);
+        // Nie zmieniamy hasła podczas edycji - hasło wymaga osobnego endpointa
+        // Dlatego nie ustawiamy setHaslo() tutaj
+        
+        Uzytkownik zaktualizowany = uzytkownikRepository.saveAndFlush(uzytkownik);
         return konwertujNaDTO(zaktualizowany);
     }
 
@@ -187,12 +195,26 @@ public class AdminService {
     // ============ DANE FINANSOWE ============
 
     /**
-     * Pobierz raport finansowy za okres
+     * Pobierz raport finansowy za okres - na podstawie zamówień
      */
     public RaportFinansowyDTO pobierzRaportFinansowy(LocalDateTime dataPoczatek, LocalDateTime dataKoniec) {
-        BigDecimal sumaPrzychodow = daneFinansoweRepository.sumaPrzychodow(dataPoczatek, dataKoniec);
-        BigDecimal sumaWydatkow = daneFinansoweRepository.sumaWydatkow(dataPoczatek, dataKoniec);
-        BigDecimal sumaZysku = daneFinansoweRepository.sumaZysku(dataPoczatek, dataKoniec);
+        // Konwertuj LocalDateTime na OffsetDateTime
+        OffsetDateTime poczatek = dataPoczatek.atOffset(ZoneOffset.UTC);
+        OffsetDateTime koniec = dataKoniec.atOffset(ZoneOffset.UTC);
+        
+        // Przychody z zamówień
+        BigDecimal sumaPrzychodow = zamowienieKlientaRepository.sumaPrzychodowZZamowien(poczatek, koniec);
+        
+        // Wydatki - na razie 0, można rozszerzyć o dostawy
+        BigDecimal sumaWydatkow = BigDecimal.ZERO;
+        
+        // Zysk = Przychody - Wydatki
+        BigDecimal sumaZysku = sumaPrzychodow.subtract(sumaWydatkow);
+
+        // Konwertuj null na BigDecimal.ZERO
+        sumaPrzychodow = sumaPrzychodow != null ? sumaPrzychodow : BigDecimal.ZERO;
+        sumaWydatkow = sumaWydatkow != null ? sumaWydatkow : BigDecimal.ZERO;
+        sumaZysku = sumaZysku != null ? sumaZysku : BigDecimal.ZERO;
 
         return new RaportFinansowyDTO(dataPoczatek, dataKoniec, sumaPrzychodow, sumaWydatkow, sumaZysku);
     }
