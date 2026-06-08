@@ -1,7 +1,9 @@
 package com.example.magazyn.api
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.example.magazyn.api.dtos.*
 import retrofit2.Response
 
@@ -85,6 +87,7 @@ object ApiConnector {
         } catch (e: Exception) { null }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun pobierzZyskMiesiac(): Double? {
         return try {
             val response = RetrofitInstance.adminApi.getProfitMonth()
