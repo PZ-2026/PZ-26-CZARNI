@@ -12,6 +12,8 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -35,10 +37,16 @@ public class AdminService {
     private ZamowienieKlientaRepository zamowienieKlientaRepository;
 
     @Autowired
+    private ZamowieniaZaopatrzeniowiecRepository zamowieniaZaopatrzeniowiecRepository;
+
+    @Autowired
     private StanMagazynuRepository stanMagazynuRepository;
 
     @Autowired
     private DostawcaRepository dostawcaRepository;
+
+    @Autowired
+    private ZamowienieProduktyDostawcyRepository zamowienieProduktyDostawcyRepository;
 
     // ============ UŻYTKOWNICY (USER MANAGEMENT) ============
 
@@ -111,9 +119,6 @@ public class AdminService {
             uzytkownik.setEmail(dto.getEmail());
         }
 
-        // Nie zmieniamy hasła podczas edycji - hasło wymaga osobnego endpointa
-        // Dlatego nie ustawiamy setHaslo() tutaj
-        
         Uzytkownik zaktualizowany = uzytkownikRepository.saveAndFlush(uzytkownik);
         return konwertujNaDTO(zaktualizowany);
     }
@@ -168,7 +173,7 @@ public class AdminService {
      */
     @Transactional
     public UzytkownikAdminDTO zmienRoleUzytkownika(Integer id, Integer nowaRola) {
-        if (nowaRola < 1 || nowaRola > 4) {
+        if (nowaRola < 0 || nowaRola > 4) {
             throw new IllegalArgumentException("Niepoprawna rola");
         }
 
@@ -185,11 +190,25 @@ public class AdminService {
      */
     public java.util.Map<String, Integer> pobierzStatystykiRol() {
         java.util.Map<String, Integer> statystyki = new java.util.HashMap<>();
+        statystyki.put("użytkownik", uzytkownikRepository.countByRola(0));
         statystyki.put("administrator", uzytkownikRepository.countByRola(1));
         statystyki.put("magazynier", uzytkownikRepository.countByRola(2));
         statystyki.put("zaopatrzeniowiec", uzytkownikRepository.countByRola(3));
         statystyki.put("klient", uzytkownikRepository.countByRola(4));
         return statystyki;
+    }
+
+    /**
+     * Pobierz listę dostępnych ról
+     */
+    public java.util.Map<Integer, String> pobierzListeRol() {
+        java.util.Map<Integer, String> role = new java.util.LinkedHashMap<>();
+        role.put(0, "Użytkownik");
+        role.put(1, "Administrator");
+        role.put(2, "Magazynier");
+        role.put(3, "Zaopatrzeniowiec");
+        role.put(4, "Klient");
+        return role;
     }
 
     // ============ DANE FINANSOWE ============
@@ -198,23 +217,16 @@ public class AdminService {
      * Pobierz raport finansowy za okres - na podstawie zamówień
      */
     public RaportFinansowyDTO pobierzRaportFinansowy(LocalDateTime dataPoczatek, LocalDateTime dataKoniec) {
-        // Konwertuj LocalDateTime na OffsetDateTime
         OffsetDateTime poczatek = dataPoczatek.atOffset(ZoneOffset.UTC);
         OffsetDateTime koniec = dataKoniec.atOffset(ZoneOffset.UTC);
         
-        // Przychody z zamówień
         BigDecimal sumaPrzychodow = zamowienieKlientaRepository.sumaPrzychodowZZamowien(poczatek, koniec);
-        
-        // Wydatki - na razie 0, można rozszerzyć o dostawy
-        BigDecimal sumaWydatkow = BigDecimal.ZERO;
-        
-        // Zysk = Przychody - Wydatki
-        BigDecimal sumaZysku = sumaPrzychodow.subtract(sumaWydatkow);
-
-        // Konwertuj null na BigDecimal.ZERO
         sumaPrzychodow = sumaPrzychodow != null ? sumaPrzychodow : BigDecimal.ZERO;
+        
+        BigDecimal sumaWydatkow = zamowieniaZaopatrzeniowiecRepository.sumaKosztowZamowien(poczatek, koniec);
         sumaWydatkow = sumaWydatkow != null ? sumaWydatkow : BigDecimal.ZERO;
-        sumaZysku = sumaZysku != null ? sumaZysku : BigDecimal.ZERO;
+        
+        BigDecimal sumaZysku = sumaPrzychodow.subtract(sumaWydatkow);
 
         return new RaportFinansowyDTO(dataPoczatek, dataKoniec, sumaPrzychodow, sumaWydatkow, sumaZysku);
     }
@@ -227,7 +239,9 @@ public class AdminService {
         LocalDateTime poczatek = biezacyMiesiac.atDay(1).atStartOfDay();
         LocalDateTime koniec = biezacyMiesiac.atEndOfMonth().atTime(23, 59, 59);
 
-        BigDecimal suma = daneFinansoweRepository.sumaPrzychodow(poczatek, koniec);
+        OffsetDateTime poczatekOffset = poczatek.atOffset(ZoneOffset.UTC);
+        OffsetDateTime koniecOffset = koniec.atOffset(ZoneOffset.UTC);
+        BigDecimal suma = zamowienieKlientaRepository.sumaPrzychodowZZamowien(poczatekOffset, koniecOffset);
         return suma != null ? suma : BigDecimal.ZERO;
     }
 
@@ -239,7 +253,9 @@ public class AdminService {
         LocalDateTime poczatek = biezacyMiesiac.atDay(1).atStartOfDay();
         LocalDateTime koniec = biezacyMiesiac.atEndOfMonth().atTime(23, 59, 59);
 
-        BigDecimal suma = daneFinansoweRepository.sumaWydatkow(poczatek, koniec);
+        OffsetDateTime poczatekOffset = poczatek.atOffset(ZoneOffset.UTC);
+        OffsetDateTime koniecOffset = koniec.atOffset(ZoneOffset.UTC);
+        BigDecimal suma = zamowieniaZaopatrzeniowiecRepository.sumaKosztowZamowien(poczatekOffset, koniecOffset);
         return suma != null ? suma : BigDecimal.ZERO;
     }
 
@@ -247,19 +263,70 @@ public class AdminService {
      * Pobierz zysk za bieżący miesiąc
      */
     public BigDecimal pobierzZyskMiesiac() {
-        YearMonth biezacyMiesiac = YearMonth.now();
-        LocalDateTime poczatek = biezacyMiesiac.atDay(1).atStartOfDay();
-        LocalDateTime koniec = biezacyMiesiac.atEndOfMonth().atTime(23, 59, 59);
-
-        BigDecimal suma = daneFinansoweRepository.sumaZysku(poczatek, koniec);
-        return suma != null ? suma : BigDecimal.ZERO;
+        BigDecimal przychody = pobierzPrzychodyMiesiac();
+        BigDecimal wydatki = pobierzWydatkiMiesiac();
+        return przychody.subtract(wydatki);
     }
 
     /**
-     * Pobierz historię finansową
+     * Pobierz historię finansową - agreguje dane z zamówień i wpisów ręcznych
      */
     public List<DaneFinansowe> pobierzHistorieFinansowa(LocalDateTime dataPoczatek, LocalDateTime dataKoniec) {
-        return daneFinansoweRepository.findByDataBetweenOrderByDataDesc(dataPoczatek, dataKoniec);
+        List<DaneFinansowe> historia = new ArrayList<>();
+        
+        // 1. Pobierz wpisy ręczne z bazy
+        historia.addAll(daneFinansoweRepository.findByDataBetweenOrderByDataDesc(dataPoczatek, dataKoniec));
+        
+        // 2. Pobierz zamówienia klientów (Przychody)
+        OffsetDateTime poczatek = dataPoczatek.atOffset(ZoneOffset.UTC);
+        OffsetDateTime koniec = dataKoniec.atOffset(ZoneOffset.UTC);
+        
+        List<ZamowienieKlienta> zamowieniaKlientow = zamowienieKlientaRepository.findByDataBetween(poczatek, koniec);
+        for (ZamowienieKlienta zk : zamowieniaKlientow) {
+            BigDecimal suma = zk.getPozycje().stream()
+                    .map(p -> p.getCenaWDniuZakupu().multiply(new BigDecimal(p.getIlosc())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            DaneFinansowe df = new DaneFinansowe();
+            df.setData(zk.getData().toLocalDateTime());
+            df.setPrzychody(suma);
+            df.setWydatki(BigDecimal.ZERO);
+            df.setZysk(suma);
+            df.setTyp("SPRZEDAŻ #" + zk.getId());
+            df.setIdZamowienia(zk.getId());
+            historia.add(df);
+        }
+        
+        // 3. Pobierz zamówienia zaopatrzeniowe (Wydatki)
+        List<ZamowienieZaopatrzeniowca> zamowieniaZaop = zamowieniaZaopatrzeniowiecRepository.findAll().stream()
+                .filter(z -> (z.getData().isAfter(poczatek) || z.getData().isEqual(poczatek)) && 
+                             (z.getData().isBefore(koniec) || z.getData().isEqual(koniec)))
+                .collect(Collectors.toList());
+                
+        for (ZamowienieZaopatrzeniowca zz : zamowieniaZaop) {
+            List<ZamowienieProduktyDostawcy> pozycje = zamowienieProduktyDostawcyRepository.findByIdZamowienia(zz.getId());
+            BigDecimal suma = BigDecimal.ZERO;
+            for (ZamowienieProduktyDostawcy p : pozycje) {
+                Optional<Produkt> prod = produktRepository.findById(p.getIdProduktu());
+                if (prod.isPresent()) {
+                    suma = suma.add(prod.get().getCena().multiply(new BigDecimal(p.getIlosc())));
+                }
+            }
+            
+            DaneFinansowe df = new DaneFinansowe();
+            df.setData(zz.getData().toLocalDateTime());
+            df.setPrzychody(BigDecimal.ZERO);
+            df.setWydatki(suma);
+            df.setZysk(suma.negate());
+            df.setTyp("ZAKUP #" + zz.getId());
+            df.setIdZamowienia(zz.getId());
+            historia.add(df);
+        }
+
+        // Sortuj malejąco po dacie
+        historia.sort(Comparator.comparing(DaneFinansowe::getData).reversed());
+        
+        return historia;
     }
 
     /**
@@ -278,9 +345,6 @@ public class AdminService {
 
     // ============ KONFIGURACJA SYSTEMU ============
 
-    /**
-     * Pobierz wszystkie parametry konfiguracyjne
-     */
     public List<KonfiguracijaDTO> pobierzWszystkoKonfiguracje() {
         return konfiguracijaRepository.findAll()
                 .stream()
@@ -288,9 +352,6 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Pobierz aktywne parametry konfiguracyjne
-     */
     public List<KonfiguracijaDTO> pobierzAktywneKonfiguracje() {
         return konfiguracijaRepository.findByAktywnaTrue()
                 .stream()
@@ -298,17 +359,11 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Pobierz parametr konfiguracyjny po nazwie
-     */
     public Optional<KonfiguracijaDTO> pobierzKonfiguracje(String nazwaParametru) {
         return konfiguracijaRepository.findByNazwaParametru(nazwaParametru)
                 .map(this::konwertujKonfiguraceNaDTO);
     }
 
-    /**
-     * Utwórz nowy parametr konfiguracyjny
-     */
     @Transactional
     public KonfiguracijaDTO utworzKonfiguracje(KonfiguracijaDTO dto) {
         if (konfiguracijaRepository.findByNazwaParametru(dto.getNazwaParametru()).isPresent()) {
@@ -326,9 +381,6 @@ public class AdminService {
         return konwertujKonfiguraceNaDTO(zapisana);
     }
 
-    /**
-     * Edytuj parametr konfiguracyjny
-     */
     @Transactional
     public KonfiguracijaDTO edytujKonfiguracje(Integer id, KonfiguracijaDTO dto) {
         Konfiguracja konfiguracja = konfiguracijaRepository.findById(id)
@@ -343,9 +395,6 @@ public class AdminService {
         return konwertujKonfiguraceNaDTO(zaktualizowana);
     }
 
-    /**
-     * Usuń parametr konfiguracyjny
-     */
     @Transactional
     public void usunKonfiguracje(Integer id) {
         if (!konfiguracijaRepository.existsById(id)) {
@@ -356,9 +405,6 @@ public class AdminService {
 
     // ============ DOSTAWCY ============
 
-    /**
-     * Pobierz wszystkich dostawców
-     */
     public List<DostawcaDTO> pobierzWszystkichDostawcow() {
         return dostawcaRepository.findAll()
                 .stream()
@@ -366,17 +412,11 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Pobierz dostawcę po ID
-     */
     public Optional<DostawcaDTO> pobierzDostawce(Integer id) {
         return dostawcaRepository.findById(id)
                 .map(this::konwertujDostawceNaDTO);
     }
 
-    /**
-     * Utwórz nowego dostawcę
-     */
     @Transactional
     public DostawcaDTO utworzDostawce(DostawcaDTO dto) {
         Dostawca dostawca = new Dostawca();
@@ -388,9 +428,6 @@ public class AdminService {
         return konwertujDostawceNaDTO(zapisany);
     }
 
-    /**
-     * Edytuj dostawcę
-     */
     @Transactional
     public DostawcaDTO edytujDostawce(Integer id, DostawcaDTO dto) {
         Dostawca dostawca = dostawcaRepository.findById(id)
@@ -404,9 +441,6 @@ public class AdminService {
         return konwertujDostawceNaDTO(zaktualizowany);
     }
 
-    /**
-     * Usuń dostawcę
-     */
     @Transactional
     public void usunDostawce(Integer id) {
         if (!dostawcaRepository.existsById(id)) {
@@ -417,9 +451,6 @@ public class AdminService {
 
     // ============ STAN MAGAZYNU ============
 
-    /**
-     * Pobierz cały stan magazynu
-     */
     public List<StanMagazynuDTO> pobierzCalyStanMagazynu() {
         return stanMagazynuRepository.findAll()
                 .stream()
@@ -427,17 +458,11 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Pobierz stan produktu
-     */
     public Optional<StanMagazynuDTO> pobierzStanProduktu(Integer idProduktu) {
         return stanMagazynuRepository.findByProdukt_Id(idProduktu)
                 .map(this::konwertujStanMagazynuNaDTO);
     }
 
-    /**
-     * Edytuj stan magazynu produktu
-     */
     @Transactional
     public StanMagazynuDTO edytujStanMagazynu(Integer id, StanMagazynuDTO dto) {
         StanMagazynu stan = stanMagazynuRepository.findById(id)
@@ -449,9 +474,6 @@ public class AdminService {
         return konwertujStanMagazynuNaDTO(zaktualizowany);
     }
 
-    /**
-     * Utwórz nowy produkt wraz z wpisem w stanie magazynu
-     */
     @Transactional
     public StanMagazynuDTO utworzStanMagazynu(StanMagazynuDTO dto) {
         if (dto.getIlosc() == null) {
@@ -489,34 +511,18 @@ public class AdminService {
 
     // ============ PANEL ADMINISTRATORA / DASHBOARD ============
 
-    /**
-     * Pobierz dane do panelu administratora (dashboard)
-     */
     public PanelAdminaDTO pobierzDanePanelu() {
         PanelAdminaDTO panel = new PanelAdminaDTO();
-
-        // Statystyki użytkowników
         panel.setLiczbaUzytkownikow(Math.toIntExact(uzytkownikRepository.count()));
-        
-        // Statystyki produktów
         panel.setLiczbaProduktu(Math.toIntExact(produktRepository.count()));
-
-        // Dane finansowe za bieżący miesiąc
         panel.setPrzychodyMiesiac(pobierzPrzychodyMiesiac());
         panel.setWydatkiMiesiac(pobierzWydatkiMiesiac());
         panel.setZyskMiesiac(pobierzZyskMiesiac());
-
-        // TODO: Dodać statystyki dotyczące zamówień i stanu magazynu
-        // Te dane wymagają pełnego zrozumienia modelu danych
-
         return panel;
     }
 
     // ============ METODY POMOCNICZE ============
 
-    /**
-     * Konwertuj entitę Uzytkownik na DTO
-     */
     private UzytkownikAdminDTO konwertujNaDTO(Uzytkownik uzytkownik) {
         UzytkownikAdminDTO dto = new UzytkownikAdminDTO();
         dto.setId(uzytkownik.getId());
@@ -525,15 +531,25 @@ public class AdminService {
         dto.setEmail(uzytkownik.getEmail());
         dto.setTelefon(uzytkownik.getTelefon());
         dto.setRola(uzytkownik.getRola());
+        dto.setNazwaRoli(mapRoleToName(uzytkownik.getRola()));
         dto.setFirma(uzytkownik.getFirma());
         dto.setNip(uzytkownik.getNip());
         dto.setZablokowany(uzytkownik.getZablokowany());
         return dto;
     }
 
-    /**
-     * Konwertuj entitę Konfiguracja na DTO
-     */
+    private String mapRoleToName(Integer rola) {
+        if (rola == null) return "Brak roli";
+        return switch (rola) {
+            case 0 -> "Użytkownik";
+            case 1 -> "Administrator";
+            case 2 -> "Magazynier";
+            case 3 -> "Zaopatrzeniowiec";
+            case 4 -> "Klient";
+            default -> "Nieznana rola";
+        };
+    }
+
     private KonfiguracijaDTO konwertujKonfiguraceNaDTO(Konfiguracja konfiguracja) {
         KonfiguracijaDTO dto = new KonfiguracijaDTO();
         dto.setId(konfiguracja.getId());
@@ -545,9 +561,6 @@ public class AdminService {
         return dto;
     }
 
-    /**
-     * Konwertuj entitę Dostawca na DTO
-     */
     private DostawcaDTO konwertujDostawceNaDTO(Dostawca dostawca) {
         DostawcaDTO dto = new DostawcaDTO();
         dto.setId(dostawca.getId());
@@ -557,9 +570,6 @@ public class AdminService {
         return dto;
     }
 
-    /**
-     * Konwertuj entitę StanMagazynu na DTO
-     */
     private StanMagazynuDTO konwertujStanMagazynuNaDTO(StanMagazynu stan) {
         StanMagazynuDTO dto = new StanMagazynuDTO();
         dto.setId(stan.getId());
@@ -572,4 +582,3 @@ public class AdminService {
         return dto;
     }
 }
-
