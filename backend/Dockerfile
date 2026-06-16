@@ -7,11 +7,11 @@ COPY gradle gradle
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
 
-RUN chmod +x gradlew
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 
 COPY src src
 
-RUN ./gradlew bootJar -x test
+RUN sh ./gradlew bootJar -x test
 
 FROM eclipse-temurin:21-jre-alpine
 
