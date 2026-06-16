@@ -2,6 +2,7 @@ package com.example.magazyn.api
 
 import com.example.magazyn.BuildConfig
 import com.example.magazyn.api.interfaces.*
+import com.example.magazyn.utils.AppSettings
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -13,7 +14,11 @@ object AuthTokenProvider {
 }
 
 object RetrofitInstance {
-    val BASE_URL: String = BuildConfig.BACKEND_URL
+    @Volatile
+    private var baseUrl: String = BuildConfig.BACKEND_URL
+
+    val BASE_URL: String
+        get() = baseUrl
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -32,39 +37,46 @@ object RetrofitInstance {
         .addInterceptor(logging)
         .build()
 
-    private val retrofit by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .client(client)
-            .build()
+    @Volatile
+    private var retrofit: Retrofit? = null
+
+    fun configure(url: String) {
+        val normalizedUrl = AppSettings.normalizeBackendUrl(url)
+        if (baseUrl != normalizedUrl) {
+            baseUrl = normalizedUrl
+            retrofit = null
+        }
     }
 
-    val uzytkownikApi: UzytkownikApi by lazy {
-        retrofit.create(UzytkownikApi::class.java)
+    private fun getRetrofit(): Retrofit {
+        return retrofit ?: synchronized(this) {
+            retrofit ?: Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build()
+                .also { retrofit = it }
+        }
     }
 
-    val zamowieniaApi: ZamowieniaApi by lazy {
-        retrofit.create(ZamowieniaApi::class.java)
-    }
+    val uzytkownikApi: UzytkownikApi
+        get() = getRetrofit().create(UzytkownikApi::class.java)
 
-    val dostawcyApi: DostawcyApi by lazy {
-        retrofit.create(DostawcyApi::class.java)
-    }
+    val zamowieniaApi: ZamowieniaApi
+        get() = getRetrofit().create(ZamowieniaApi::class.java)
 
-    val produktApi: ProduktApi by lazy {
-        retrofit.create(ProduktApi::class.java)
-    }
+    val dostawcyApi: DostawcyApi
+        get() = getRetrofit().create(DostawcyApi::class.java)
 
-    val magazynApi: MagazynApi by lazy {
-        retrofit.create(MagazynApi::class.java)
-    }
+    val produktApi: ProduktApi
+        get() = getRetrofit().create(ProduktApi::class.java)
 
-    val adminApi: AdminApi by lazy {
-        retrofit.create(AdminApi::class.java)
-    }
+    val magazynApi: MagazynApi
+        get() = getRetrofit().create(MagazynApi::class.java)
 
-    val magazynierApi: MagazynierApi by lazy {
-        retrofit.create(MagazynierApi::class.java)
-    }
+    val adminApi: AdminApi
+        get() = getRetrofit().create(AdminApi::class.java)
+
+    val magazynierApi: MagazynierApi
+        get() = getRetrofit().create(MagazynierApi::class.java)
 }

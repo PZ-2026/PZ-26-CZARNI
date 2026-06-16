@@ -33,10 +33,31 @@ object AppSettings {
         prefs(context).edit().putBoolean(KEY_NOTIFICATIONS, enabled).apply()
     }
 
+    fun normalizeBackendUrl(url: String): String {
+        val trimmed = url.trim()
+        if (trimmed.isBlank()) return DEFAULT_BACKEND_URL
+
+        val withScheme = if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            trimmed
+        } else {
+            "http://$trimmed"
+        }
+
+        val withoutTrailingSlash = withScheme.trimEnd('/')
+        val portPattern = Regex(""":\d+($|/)""")
+        val withPort = if (portPattern.containsMatchIn(withoutTrailingSlash.removePrefix("http://").removePrefix("https://"))) {
+            withoutTrailingSlash
+        } else {
+            "$withoutTrailingSlash:8080"
+        }
+
+        return "$withPort/"
+    }
+
     fun getBackendUrl(context: Context): String =
-        prefs(context).getString(KEY_BACKEND_URL, DEFAULT_BACKEND_URL) ?: DEFAULT_BACKEND_URL
+        normalizeBackendUrl(prefs(context).getString(KEY_BACKEND_URL, DEFAULT_BACKEND_URL) ?: DEFAULT_BACKEND_URL)
 
     fun setBackendUrl(context: Context, url: String) {
-        prefs(context).edit().putString(KEY_BACKEND_URL, url).apply()
+        prefs(context).edit().putString(KEY_BACKEND_URL, normalizeBackendUrl(url)).apply()
     }
 }

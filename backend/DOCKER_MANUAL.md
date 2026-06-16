@@ -36,7 +36,7 @@ http://localhost:8080/
 
 W Android Studio uruchom aplikację frontendową na emulatorze.
 
-Frontend jest ustawiony na adres:
+Frontend domyślnie łączy się z:
 
 ```text
 http://10.0.2.2:8080/
@@ -46,74 +46,35 @@ To jest poprawny adres backendu dla emulatora Androida.
 
 ## 5. Jeśli uruchamiasz aplikację na fizycznym telefonie
 
-Adres `10.0.2.2` działa tylko w emulatorze. Na telefonie trzeba użyć adresu IP komputera w tej samej sieci Wi-Fi.
+Adres `10.0.2.2` działa tylko w emulatorze. Na telefonie backend musi być dostępny pod adresem IP komputera w tej samej sieci Wi-Fi.
 
-### Krok 1: podłącz telefon i komputer do tej samej sieci
-
-Telefon i komputer muszą być w tej samej sieci lokalnej, najlepiej na tym samym Wi-Fi.
-
-### Krok 2: sprawdź IP komputera
-
-W PowerShell wpisz:
+Sprawdź IP komputera:
 
 ```powershell
 ipconfig
 ```
 
-Znajdź kartę Wi-Fi i pole:
+Szukaj aktywnej karty sieciowej z bramą domyślną, np.:
 
 ```text
-IPv4 Address
+IPv4 Address: 192.168.68.106
+Default Gateway: 192.168.68.1
 ```
 
-Przykład:
+Telefon powinien być w tej samej sieci, np. też `192.168.68.x`.
+
+Jeśli aplikacja ma działać na telefonie, adres backendu w buildzie frontendu musi wskazywać IP komputera, np.:
 
 ```text
-192.168.1.50
+http://192.168.68.106:8080/
 ```
 
-### Krok 3: zmień adres backendu we frontendzie
+Jeśli telefon nie otwiera tego adresu w przeglądarce, sprawdź:
 
-Otwórz plik:
-
-```text
-frontend/app/build.gradle.kts
-```
-
-Zmień:
-
-```kotlin
-buildConfigField("String", "BACKEND_URL", "\"http://10.0.2.2:8080/\"")
-```
-
-na adres IP komputera, np.:
-
-```kotlin
-buildConfigField("String", "BACKEND_URL", "\"http://192.168.1.50:8080/\"")
-```
-
-### Krok 4: uruchom backend w Dockerze
-
-W katalogu backendu:
-
-```powershell
-cd C:\Users\wojci\PZ-26-CZARNI\backend
-docker compose up --build
-```
-
-### Krok 5: przebuduj i uruchom aplikację na telefonie
-
-Po zmianie `BACKEND_URL` przebuduj aplikację w Android Studio i uruchom ją na telefonie.
-
-### Jeśli telefon dalej nie łączy się z backendem
-
-Sprawdź:
-
-- czy telefon i komputer są w tej samej sieci Wi-Fi,
 - czy backend działa w Dockerze,
-- czy adres IP w `BACKEND_URL` jest aktualny,
-- czy port `8080` nie jest blokowany przez zaporę Windows,
-- czy w przeglądarce telefonu działa adres `http://IP_KOMPUTERA:8080/`, np. `http://192.168.1.50:8080/`.
+- czy telefon i komputer są w tej samej sieci Wi-Fi,
+- czy używasz właściwego IP komputera, a nie karty wirtualnej typu `192.168.56.1`,
+- czy Zapora Windows nie blokuje portu `8080`.
 
 ## 6. Zatrzymanie backendu
 
