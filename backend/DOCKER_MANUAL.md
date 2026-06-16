@@ -1,92 +1,142 @@
-# Uruchomienie backendu w Dockerze od zera
+# Uruchomienie backendu w Dockerze
 
-## 1. Uruchom Docker Desktop
+## Wymagania
 
-Otwórz Docker Desktop i poczekaj, aż będzie gotowy do pracy.
+Przed uruchomieniem upewnij się, że masz:
 
-Jeśli Docker nie działa, komendy `docker compose` pokażą błąd podobny do:
+- zainstalowany Docker Desktop,
+- uruchomiony Docker Engine,
+- sklonowane repozytorium projektu,
+- dostęp do internetu przy pierwszym buildzie.
 
-```text
-dockerDesktopLinuxEngine: The system cannot find the file specified
+## 1. Przejdź do katalogu backendu
+
+Otwórz terminal w katalogu projektu i przejdź do folderu backendu:
+
+```bash
+cd backend
 ```
 
-## 2. Otwórz terminal w katalogu backendu
+Jeśli jesteś w innym miejscu na dysku, najpierw przejdź do katalogu repozytorium, a dopiero potem do `backend`.
 
-W PowerShell przejdź do katalogu backendu:
+## 2. Zbuduj i uruchom backend
 
-```powershell
-cd C:\Users\wojci\PZ-26-CZARNI\backend
-```
+W katalogu `backend` uruchom:
 
-## 3. Zbuduj i uruchom backend
-
-```powershell
+```bash
 docker compose up --build
 ```
 
-Pierwsze uruchomienie może potrwać dłużej, bo Docker pobiera obraz Javy i Gradle pobiera zależności.
+Podczas pierwszego uruchomienia Docker może pobierać obrazy bazowe, a Gradle zależności projektu. To może potrwać kilka minut.
 
-Po poprawnym starcie backend działa na:
+Po poprawnym starcie backend jest dostępny na komputerze pod adresem:
 
 ```text
 http://localhost:8080/
 ```
 
-## 4. Uruchom frontend w emulatorze Androida
+Backend uruchamia tez lokalna baze PostgreSQL w kontenerze `backend-db`.
+Przy pierwszym starcie baza jest tworzona z pliku `magazyn.sql`.
 
-W Android Studio uruchom aplikację frontendową na emulatorze.
+Domyslne dane bazy w Dockerze:
 
-Frontend domyślnie łączy się z:
+```text
+host z komputera: localhost
+port z komputera: 5433
+baza: magazyn_db
+uzytkownik: postgres
+haslo: postgres
+```
+
+Wewnatrz sieci Dockera backend laczy sie z baza przez:
+
+```text
+jdbc:postgresql://db:5432/magazyn_db
+```
+
+Jesli zmienisz plik `magazyn.sql` i chcesz zaladowac dump od nowa, usun wolumen bazy:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+## 3. Uruchom frontend na emulatorze Androida
+
+Jeśli aplikacja działa na emulatorze Androida, frontend powinien łączyć się z backendem przez:
 
 ```text
 http://10.0.2.2:8080/
 ```
 
-To jest poprawny adres backendu dla emulatora Androida.
+`10.0.2.2` to specjalny adres, który z emulatora wskazuje na komputer hosta.
 
-## 5. Jeśli uruchamiasz aplikację na fizycznym telefonie
+## 4. Uruchom frontend na fizycznym telefonie
 
-Adres `10.0.2.2` działa tylko w emulatorze. Na telefonie backend musi być dostępny pod adresem IP komputera w tej samej sieci Wi-Fi.
+Jeśli aplikacja działa na fizycznym telefonie, telefon nie może używać `10.0.2.2`.
 
-Sprawdź IP komputera:
-
-```powershell
-ipconfig
-```
-
-Szukaj aktywnej karty sieciowej z bramą domyślną, np.:
+Telefon musi łączyć się z adresem IP komputera w tej samej sieci lokalnej, np.:
 
 ```text
-IPv4 Address: 192.168.68.106
-Default Gateway: 192.168.68.1
+http://192.168.1.50:8080/
 ```
 
-Telefon powinien być w tej samej sieci, np. też `192.168.68.x`.
+Jak znaleźć IP komputera:
 
-Jeśli aplikacja ma działać na telefonie, adres backendu w buildzie frontendu musi wskazywać IP komputera, np.:
+- Windows: `ipconfig`
+- Linux/macOS: `ip addr` albo `ifconfig`
 
-```text
-http://192.168.68.106:8080/
-```
+Wybierz adres aktywnej karty sieciowej, która ma bramę domyślną. Nie używaj adresów kart wirtualnych, VPN ani sieci host-only.
 
-Jeśli telefon nie otwiera tego adresu w przeglądarce, sprawdź:
+Telefon i komputer muszą być w tej samej sieci Wi-Fi/LAN.
+
+Jeśli telefon nie widzi backendu, sprawdź:
 
 - czy backend działa w Dockerze,
-- czy telefon i komputer są w tej samej sieci Wi-Fi,
-- czy używasz właściwego IP komputera, a nie karty wirtualnej typu `192.168.56.1`,
-- czy Zapora Windows nie blokuje portu `8080`.
+- czy port `8080` jest wystawiony,
+- czy telefon i komputer są w tej samej sieci,
+- czy zapora systemowa nie blokuje portu `8080`,
+- czy w przeglądarce telefonu działa `http://IP_KOMPUTERA:8080/`.
+
+## 5. Zmiana adresu backendu we frontendzie
+
+Adres backendu jest ustawiony w pliku:
+
+```text
+frontend/app/build.gradle.kts
+```
+
+Szukaj linii:
+
+```kotlin
+buildConfigField("String", "BACKEND_URL", "\"http://10.0.2.2:8080/\"")
+```
+
+Dla emulatora Androida zostaw:
+
+```kotlin
+buildConfigField("String", "BACKEND_URL", "\"http://10.0.2.2:8080/\"")
+```
+
+Dla fizycznego telefonu wpisz IP komputera w sieci lokalnej, np.:
+
+```kotlin
+buildConfigField("String", "BACKEND_URL", "\"http://192.168.1.50:8080/\"")
+```
+
+Po zmianie adresu przebuduj aplikację Android, żeby nowa wartość trafiła do `BuildConfig`.
 
 ## 6. Zatrzymanie backendu
 
-W terminalu, w którym działa `docker compose up`, naciśnij:
+W terminalu, w którym działa backend, naciśnij:
 
 ```text
 Ctrl + C
 ```
 
-Potem możesz usunąć uruchomiony kontener:
+Następnie możesz usunąć kontener:
 
-```powershell
+```bash
 docker compose down
 ```
 
@@ -94,25 +144,50 @@ docker compose down
 
 Sprawdzenie działających kontenerów:
 
-```powershell
+```bash
 docker ps
 ```
 
 Podgląd logów backendu:
 
-```powershell
+```bash
 docker compose logs -f backend
 ```
 
 Uruchomienie bez ponownego budowania:
 
-```powershell
+```bash
 docker compose up
 ```
 
-Przebudowanie od zera:
+Przebudowanie obrazu od zera:
 
-```powershell
+```bash
 docker compose build --no-cache
 docker compose up
 ```
+
+Sprawdzenie konfiguracji compose:
+
+```bash
+docker compose config
+```
+
+## Typowe problemy
+
+### Docker nie jest uruchomiony
+
+Jeśli pojawia się błąd połączenia z Docker Engine, uruchom Docker Desktop i poczekaj, aż będzie gotowy.
+
+### Port 8080 jest zajęty
+
+Jeśli port `8080` jest zajęty, zatrzymaj proces używający tego portu albo zmień mapowanie portu w `docker-compose.yml`.
+
+### Telefon nie łączy się z backendem
+
+Najczęstsze przyczyny:
+
+- wpisany został adres emulatora `10.0.2.2`,
+- wpisany został adres karty wirtualnej,
+- telefon jest w innej sieci niż komputer,
+- firewall blokuje port `8080`.
