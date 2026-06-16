@@ -36,5 +36,4 @@ public interface ZamowienieKlientaRepository extends JpaRepository<ZamowienieKli
 
     @Query("SELECT COALESCE(SUM(z.ilosc * z.cenaWDniuZakupu), 0) FROM ZamowienieProduktyKlienci z JOIN z.zamowienie zk WHERE zk.data >= ?1 AND zk.data <= ?2")
     BigDecimal sumaPrzychodowZZamowien(OffsetDateTime dataPoczatek, OffsetDateTime dataKoniec);
-    List<ZamowienieKlienta> findByMagazynierIdAndStatusNot(Integer magazynierId, Integer status);
 }

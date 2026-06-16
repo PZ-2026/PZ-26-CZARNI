@@ -2,6 +2,7 @@ package com.example.magazyn.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.magazyn.BuildConfig
 
 object AppSettings {
     private const val PREFS_NAME = "app_settings"
@@ -10,7 +11,7 @@ object AppSettings {
     const val KEY_NOTIFICATIONS = "notifications"
     const val KEY_BACKEND_URL = "backend_url"
 
-    const val DEFAULT_BACKEND_URL = "http://10.0.2.2:8080/"
+    val DEFAULT_BACKEND_URL: String = BuildConfig.BACKEND_URL
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

@@ -1,0 +1,15 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend-app
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_ADDRESS: 0.0.0.0
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST:-188.68.236.147}:${DB_PORT:-5432}/${DB_NAME:-magazyn_db}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-nj2h23GHJrzfgh3y4127UHaf}
+    restart: unless-stopped
