@@ -208,19 +208,6 @@
           <option name="screenY" value="2160" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
-          <option name="api" value="35" />
-          <option name="brand" value="Lenovo" />
-          <option name="codename" value="TB330FU" />
-          <option name="formFactor" value="Tablet" />
-          <option name="id" value="TB330FU" />
-          <option name="labId" value="google" />
-          <option name="manufacturer" value="Lenovo" />
-          <option name="name" value="Tab M11" />
-          <option name="screenDensity" value="240" />
-          <option name="screenX" value="1200" />
-          <option name="screenY" value="1920" />
-        </PersistentDeviceSelectionData>
-        <PersistentDeviceSelectionData>
           <option name="api" value="33" />
           <option name="brand" value="samsung" />
           <option name="codename" value="a03su" />
@@ -1085,6 +1072,19 @@
           <option name="screenY" value="1920" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
+          <option name="api" value="36" />
+          <option name="brand" value="samsung" />
+          <option name="codename" value="gts10pwifi" />
+          <option name="formFactor" value="Tablet" />
+          <option name="id" value="gts10pwifi" />
+          <option name="labId" value="google" />
+          <option name="manufacturer" value="Samsung" />
+          <option name="name" value="Galaxy Tab S10+" />
+          <option name="screenDensity" value="320" />
+          <option name="screenX" value="1752" />
+          <option name="screenY" value="2800" />
+        </PersistentDeviceSelectionData>
+        <PersistentDeviceSelectionData>
           <option name="api" value="33" />
           <option name="brand" value="samsung" />
           <option name="codename" value="gts7lwifi" />
@@ -1758,24 +1758,6 @@
           <option name="screenDensity" value="450" />
           <option name="screenX" value="1440" />
           <option name="screenY" value="3120" />
-        </PersistentDeviceSelectionData>
-        <PersistentDeviceSelectionData>
-          <option name="accessStatus">
-            <list>
-              <option value="EULA_NOT_ACCEPTED" />
-            </list>
-          </option>
-          <option name="api" value="33" />
-          <option name="brand" value="samsung" />
-          <option name="codename" value="samsung_lab_gta9p" />
-          <option name="formFactor" value="Tablet" />
-          <option name="id" value="samsung_lab_gta9p" />
-          <option name="labId" value="samsung" />
-          <option name="manufacturer" value="Samsung" />
-          <option name="name" value="Galaxy Tab A9+ 5G" />
-          <option name="screenDensity" value="240" />
-          <option name="screenX" value="1200" />
-          <option name="screenY" value="1920" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
           <option name="accessStatus">
