@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.example.magazyn.api.RetrofitInstance
 import com.example.magazyn.api.dtos.ZamowienieKlientaDTO
 import kotlinx.coroutines.launch
+import retrofit2.Response
 
 
 @Composable

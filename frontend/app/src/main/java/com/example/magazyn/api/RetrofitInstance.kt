@@ -15,9 +15,10 @@ object AuthTokenProvider {
 // Jeśli terminal nie widzi 'adb', użyj pełnej ścieżki:
 // ~/AppData/Local/Android/Sdk/platform-tools/adb reverse tcp:8080 tcp:8080
 //  Ustaw BASE_URL na "http://localhost:8080/"
-    object RetrofitInstance {
-        const val BASE_URL = "http://localhost:8080/"
 
+object RetrofitInstance {
+    const val BASE_URL = "http://10.0.2.2:8080/" 
+  
         private val retrofit by lazy {
             Retrofit.Builder()
                 .baseUrl(BASE_URL)

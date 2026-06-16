@@ -29,9 +29,11 @@ public class UzytkownikAdminDTO {
     private String email;
 
     @NotNull(message = "Rola jest wymagana")
-    @Min(value = 1, message = "Rola musi być liczbą większą niż 0")
-    @Max(value = 4, message = "Rola musi być liczbą od 1 do 4")
+    @Min(value = 0, message = "Rola musi być liczbą od 0 do 4")
+    @Max(value = 4, message = "Rola musi być liczbą od 0 do 4")
     private Integer rola;
+
+    private String nazwaRoli; // Opis roli do wyświetlania (administrator, magazynier, zaopatrzeniowiec, klient)
 
     private String firma;
 

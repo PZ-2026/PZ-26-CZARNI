@@ -37,8 +37,7 @@ public class Uzytkownik {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @NotBlank(message = "Hasło jest wymagane")
-    @Size(min = 8, message = "Hasło musi mieć minimum 8 znaków")
+    // Hasło nie jest walidowane na poziomie encji - walidacja odbywa się w serwisie
     @Column(nullable = false)
     private String haslo;
 

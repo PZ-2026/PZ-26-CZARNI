@@ -5,7 +5,7 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import com.example.magazyn.api.dtos.*
-import retrofit2.http.*
+import retrofit2.Response
 
 object ApiConnector {
     suspend fun login(context: Context, login: String, haslo: String): UzytkownikDTO? {
@@ -31,7 +31,7 @@ object ApiConnector {
         } catch (e: Exception) { null }
     }
 
-    suspend fun pobierzWszystkowUzytkownikow(): List<UzytkownikAdminDTO>? {
+    suspend fun pobierzWszystkichUzytkownikow(): List<UzytkownikAdminDTO>? {
         return try {
             val response = RetrofitInstance.adminApi.getAllUsers()
             if (response.isSuccessful) response.body() else null
@@ -46,7 +46,6 @@ object ApiConnector {
         } catch (e: Exception) { Pair(null, e.message) }
     }
 
-    // Nowa wersja edycji przyjmująca mapę pól
     suspend fun edytujUzytkownika(id: Int, pola: Map<String, Any?>): Pair<UzytkownikAdminDTO?, String?> {
         return try {
             val response = RetrofitInstance.adminApi.updateUser(id, pola)
@@ -125,8 +124,6 @@ object ApiConnector {
         } catch (e: Exception) { null }
     }
 
-    // ============ DOSTAWCY ============
-
     suspend fun pobierzWszystkichDostawcow(): List<DostawcaDTO>? {
         return try {
             val response = RetrofitInstance.adminApi.getAllDostawcy()
@@ -154,8 +151,6 @@ object ApiConnector {
         return try { RetrofitInstance.adminApi.deleteDostawca(id).isSuccessful } catch (e: Exception) { false }
     }
 
-    // ============ STAN MAGAZYNU ============
-
     suspend fun pobierzCalyStanMagazynu(): List<StanMagazynuDTO>? {
         return try {
             val response = RetrofitInstance.adminApi.getAllStanMagazynu()
@@ -175,8 +170,6 @@ object ApiConnector {
         return try { RetrofitInstance.adminApi.deleteStanMagazynu(id).isSuccessful } catch (e: Exception) { false }
     }
 
-    // ============ ZAMÓWIENIA (dla panelu/admina) ============
-
     suspend fun pobierzHistorieZamowien(uzytkownikId: Int): List<HistoriaZamowieniaDTO>? {
         return try {
             RetrofitInstance.zamowieniaApi.getHistoriaZamowienKlient(uzytkownikId)
@@ -189,8 +182,6 @@ object ApiConnector {
             response.isSuccessful
         } catch (e: Exception) { false }
     }
-
-    // ============ KONFIGURACJA ============
 
     suspend fun edytujKonfiguracje(id: Int, config: KonfiguracijaDTO): Pair<KonfiguracijaDTO?, String?> {
         return try {

@@ -2,6 +2,7 @@ package ui.screens.admin
 
 import android.content.Context
 import android.graphics.Paint
+import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
 import android.util.Log
@@ -118,7 +119,7 @@ fun AdminDashboard(
                         icon = { Icon(item.icon, contentDescription = item.title) },
                         label = { Text(item.title, style = MaterialTheme.typography.labelSmall) },
                         selected = selectedItem.intValue == index,
-                        alwaysShowLabel = false, // Etykieta pokaże się tylko dla wybranego elementu
+                        alwaysShowLabel = false,
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = DeepBurgundy,
                             selectedTextColor = DeepBurgundy,
@@ -165,7 +166,7 @@ fun UsersTab() {
             isLoading.value = true
             error.value = null
             try {
-                val result = ApiConnector.pobierzWszystkowUzytkownikow()
+                val result = ApiConnector.pobierzWszystkichUzytkownikow()
                 users.value = result
                 isLoading.value = false
             } catch (e: Exception) {
@@ -419,6 +420,7 @@ fun UserDialog(
                 Text("Rola:", fontWeight = FontWeight.Bold)
 
                 Column {
+                    RolaOption("Użytkownik", rola == RoleConstants.UZYTKOWNIK) { rola = RoleConstants.UZYTKOWNIK }
                     RolaOption("Administrator", rola == RoleConstants.ADMINISTRATOR) { rola = RoleConstants.ADMINISTRATOR }
                     RolaOption("Magazynier", rola == RoleConstants.MAGAZYNIER) { rola = RoleConstants.MAGAZYNIER }
                     RolaOption("Zaopatrzeniowiec", rola == RoleConstants.ZAOPATRZENIOWIEC) { rola = RoleConstants.ZAOPATRZENIOWIEC }
@@ -1052,7 +1054,7 @@ fun FinanceTab() {
                     if (filteredHistory.isEmpty()) {
                         Text("Brak pozycji dla wybranego okresu lub zapytania.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                     } else {
-                        filteredHistory.take(10).forEach { item ->
+                        filteredHistory.take(20).forEach { item ->
                             Column(modifier = Modifier.padding(vertical = 4.dp)) {
                                 Text("${item.data} - ${item.typ}", fontWeight = FontWeight.Bold)
                                 Text("Przychody: ${item.przychody} PLN, Wydatki: ${item.wydatki} PLN, Zysk: ${item.zysk} PLN", style = MaterialTheme.typography.bodySmall)
@@ -1096,30 +1098,72 @@ fun zapiszRaportFinansowyDoPdf(context: Context, raport: RaportFinansowyDTO, his
         val paint = Paint().apply {
             textSize = 12f
             color = android.graphics.Color.BLACK
+            typeface = Typeface.DEFAULT
+        }
+        val headerPaint = Paint().apply {
+            textSize = 18f
+            color = android.graphics.Color.BLACK
+            typeface = Typeface.DEFAULT_BOLD
         }
 
-        var y = 40f
-        canvas.drawText("Raport finansowy", 40f, y, paint)
-        y += 24f
+        var y = 50f
+        canvas.drawText("RAPORT FINANSOWY", 40f, y, headerPaint)
+        y += 30f
+        paint.textSize = 12f
         canvas.drawText("Okres: $okres", 40f, y, paint)
         y += 24f
-        canvas.drawText("Przychody: ${raport.sumaPrzychodow} PLN", 40f, y, paint)
+        canvas.drawText("Przychody całkowite: ${raport.sumaPrzychodow} PLN", 40f, y, paint)
         y += 20f
-        canvas.drawText("Wydatki: ${raport.sumaWydatkow} PLN", 40f, y, paint)
+        canvas.drawText("Wydatki całkowite: ${raport.sumaWydatkow} PLN", 40f, y, paint)
         y += 20f
-        canvas.drawText("Zysk netto: ${raport.sumaZysku} PLN", 40f, y, paint)
-        y += 32f
-        canvas.drawText("Historia finansowa:", 40f, y, paint)
+        paint.typeface = Typeface.DEFAULT_BOLD
+        canvas.drawText("ZYSK NETTO: ${raport.sumaZysku} PLN", 40f, y, paint)
+        paint.typeface = Typeface.DEFAULT
+        y += 40f
+
+        canvas.drawText("SZCZEGÓŁOWA HISTORIA:", 40f, y, paint)
         y += 20f
+
+        // Table Header
+        paint.textSize = 10f
+        paint.typeface = Typeface.DEFAULT_BOLD
+        canvas.drawText("Data", 40f, y, paint)
+        canvas.drawText("Typ", 140f, y, paint)
+        canvas.drawText("Przychód", 300f, y, paint)
+        canvas.drawText("Wydatek", 400f, y, paint)
+        canvas.drawText("Zysk", 500f, y, paint)
+        paint.typeface = Typeface.DEFAULT
+        y += 5f
+        canvas.drawLine(40f, y, 555f, y, paint)
+        y += 15f
 
         historia.forEach { item ->
             if (y > 780f) {
                 document.finishPage(page)
                 page = createPage()
                 canvas = page.canvas
-                y = 40f
+                y = 50f
+                // Redraw table header on new page
+                paint.typeface = Typeface.DEFAULT_BOLD
+                canvas.drawText("Data", 40f, y, paint)
+                canvas.drawText("Typ", 140f, y, paint)
+                canvas.drawText("Przychód", 300f, y, paint)
+                canvas.drawText("Wydatek", 400f, y, paint)
+                canvas.drawText("Zysk", 500f, y, paint)
+                paint.typeface = Typeface.DEFAULT
+                y += 5f
+                canvas.drawLine(40f, y, 555f, y, paint)
+                y += 15f
             }
-            canvas.drawText("${item.data} | ${item.typ} | Przychody: ${item.przychody} PLN | Wydatki: ${item.wydatki} PLN | Zysk: ${item.zysk} PLN", 40f, y, paint)
+            val formattedDate = try {
+                if (item.data.length >= 16) item.data.substring(0, 10) + " " + item.data.substring(11, 16) else item.data
+            } catch (e: Exception) { item.data }
+
+            canvas.drawText(formattedDate, 40f, y, paint)
+            canvas.drawText(if (item.typ.length > 25) item.typ.substring(0, 22) + "..." else item.typ, 140f, y, paint)
+            canvas.drawText(item.przychody.toString(), 300f, y, paint)
+            canvas.drawText(item.wydatki.toString(), 400f, y, paint)
+            canvas.drawText(item.zysk.toString(), 500f, y, paint)
             y += 18f
         }
 

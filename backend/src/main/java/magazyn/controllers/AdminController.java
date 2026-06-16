@@ -6,6 +6,7 @@ import magazyn.entity.DaneFinansowe;
 import magazyn.service.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,12 +29,13 @@ public class AdminController {
      * GET /api/admin/users - Pobierz wszystkich użytkowników
      */
     @GetMapping("/users")
-    public ResponseEntity<List<UzytkownikAdminDTO>> pobierzWszystkowUzytkownikow() {
+    public ResponseEntity<?> pobierzWszystkowUzytkownikow() {
         try {
             List<UzytkownikAdminDTO> uzytkownicy = adminService.pobierzWszystkowUzytkownikow();
             return ResponseEntity.ok(uzytkownicy);
         } catch (Exception e) {
-            return ResponseEntity.status(500).build();
+            ErrorResponseDTO error = new ErrorResponseDTO(500, "Błąd podczas pobierania użytkowników", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 
@@ -44,10 +46,11 @@ public class AdminController {
     public ResponseEntity<?> pobierzUzytkownika(@PathVariable Integer id) {
         try {
             return adminService.pobierzUzytkownika(id)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+                    .<ResponseEntity<?>>map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(404).body(new ErrorResponseDTO(404, "Użytkownik nie znaleziony")));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(500, "Błąd podczas pobierania użytkownika", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 
@@ -58,11 +61,13 @@ public class AdminController {
     public ResponseEntity<?> utworzUzytkownika(@Valid @RequestBody UzytkownikAdminDTO dto) {
         try {
             UzytkownikAdminDTO nowyUzytkownik = adminService.utworzUzytkownika(dto);
-            return ResponseEntity.ok(nowyUzytkownik);
+            return ResponseEntity.status(201).body(nowyUzytkownik);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body("Błąd: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(400, "Błąd walidacji", e.getMessage());
+            return ResponseEntity.status(400).body(error);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Błąd podczas tworzenia użytkownika: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(500, "Błąd podczas tworzenia użytkownika", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 
@@ -75,9 +80,14 @@ public class AdminController {
             UzytkownikAdminDTO zaktualizowany = adminService.edytujUzytkownika(id, dto);
             return ResponseEntity.ok(zaktualizowany);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).body("Błąd: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(404, "Błąd walidacji", e.getMessage());
+            return ResponseEntity.status(404).body(error);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            ErrorResponseDTO error = new ErrorResponseDTO(400, "Błąd danych", "Dane naruszają ograniczenia bazy danych - " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+            return ResponseEntity.status(400).body(error);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Błąd podczas edycji użytkownika: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(500, "Błąd podczas edycji użytkownika", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 
@@ -88,11 +98,13 @@ public class AdminController {
     public ResponseEntity<?> usunUzytkownika(@PathVariable Integer id) {
         try {
             adminService.usunUzytkownika(id);
-            return ResponseEntity.ok("Użytkownik został usunięty");
+            return ResponseEntity.ok(Map.of("message", "Użytkownik został usunięty"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).body("Błąd: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(404, "Błąd", e.getMessage());
+            return ResponseEntity.status(404).body(error);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Błąd podczas usuwania użytkownika: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(500, "Błąd podczas usuwania użytkownika", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 
@@ -103,11 +115,13 @@ public class AdminController {
     public ResponseEntity<?> zablokowakUzytkownika(@PathVariable Integer id) {
         try {
             adminService.zablokowakUzytkownika(id);
-            return ResponseEntity.ok("Użytkownik został zablokowany");
+            return ResponseEntity.ok(Map.of("message", "Użytkownik został zablokowany"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).body("Błąd: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(404, "Błąd", e.getMessage());
+            return ResponseEntity.status(404).body(error);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(500, "Błąd", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 
@@ -118,11 +132,13 @@ public class AdminController {
     public ResponseEntity<?> odblokowakUzytkownika(@PathVariable Integer id) {
         try {
             adminService.odblokowakUzytkownika(id);
-            return ResponseEntity.ok("Użytkownik został odblokowany");
+            return ResponseEntity.ok(Map.of("message", "Użytkownik został odblokowany"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).body("Błąd: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(404, "Błąd", e.getMessage());
+            return ResponseEntity.status(404).body(error);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(500, "Błąd", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 
@@ -130,12 +146,13 @@ public class AdminController {
      * GET /api/admin/users/role/{roleId} - Pobierz użytkowników po roli
      */
     @GetMapping("/users/role/{roleId}")
-    public ResponseEntity<List<UzytkownikAdminDTO>> pobierzUzytkownikowPoRoli(@PathVariable Integer roleId) {
+    public ResponseEntity<?> pobierzUzytkownikowPoRoli(@PathVariable Integer roleId) {
         try {
             List<UzytkownikAdminDTO> uzytkownicy = adminService.pobierzUzytkownikoPORoli(roleId);
             return ResponseEntity.ok(uzytkownicy);
         } catch (Exception e) {
-            return ResponseEntity.status(500).build();
+            ErrorResponseDTO error = new ErrorResponseDTO(500, "Błąd podczas pobierania użytkowników", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 
@@ -150,9 +167,11 @@ public class AdminController {
             UzytkownikAdminDTO zaktualizowany = adminService.zmienRoleUzytkownika(id, newRoleId);
             return ResponseEntity.ok(zaktualizowany);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body("Błąd: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(400, "Błąd walidacji", e.getMessage());
+            return ResponseEntity.status(400).body(error);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Błąd: " + e.getMessage());
+            ErrorResponseDTO error = new ErrorResponseDTO(500, "Błąd", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 
@@ -160,12 +179,27 @@ public class AdminController {
      * GET /api/admin/roles/statistics - Pobierz statystyki użytkowników po rolach
      */
     @GetMapping("/roles/statistics")
-    public ResponseEntity<Map<String, Integer>> pobierzStatystykiRol() {
+    public ResponseEntity<?> pobierzStatystykiRol() {
         try {
             Map<String, Integer> statystyki = adminService.pobierzStatystykiRol();
             return ResponseEntity.ok(statystyki);
         } catch (Exception e) {
-            return ResponseEntity.status(500).build();
+            ErrorResponseDTO error = new ErrorResponseDTO(500, "Błąd podczas pobierania statystyk", e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+
+    /**
+     * GET /api/admin/roles/list - Pobierz listę dostępnych ról
+     */
+    @GetMapping("/roles/list")
+    public ResponseEntity<?> pobierzListeRol() {
+        try {
+            Map<Integer, String> role = adminService.pobierzListeRol();
+            return ResponseEntity.ok(role);
+        } catch (Exception e) {
+            ErrorResponseDTO error = new ErrorResponseDTO(500, "Błąd podczas pobierania ról", e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 
