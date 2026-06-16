@@ -19,13 +19,13 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(onLoginSuccess: (UzytkownikDTO) -> Unit, onNavigateToRegister: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val uriHandler = LocalUriHandler.current
+
     var login by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
-
-    val uriHandler = LocalUriHandler.current
-    val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
         modifier = Modifier
