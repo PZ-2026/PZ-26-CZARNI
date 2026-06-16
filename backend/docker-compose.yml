@@ -1,4 +1,23 @@
 services:
+  db:
+    image: postgres:17-alpine
+    container_name: backend-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-magazyn_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT_EXTERNAL:-5433}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./magazyn.sql:/docker-entrypoint-initdb.d/01-magazyn.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   backend:
     build:
       context: .
@@ -9,7 +28,13 @@ services:
     environment:
       SERVER_ADDRESS: 0.0.0.0
       SERVER_PORT: 8080
-      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST:-188.68.236.147}:${DB_PORT:-5432}/${DB_NAME:-magazyn_db}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST:-db}:${DB_PORT:-5432}/${DB_NAME:-magazyn_db}
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-nj2h23GHJrzfgh3y4127UHaf}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres}
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  postgres-data:
